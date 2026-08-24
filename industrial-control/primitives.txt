@@ -1,0 +1,24 @@
+control power
+normally-open contact
+normally-closed contact
+momentary pushbutton
+selector switch
+relay coil
+auxiliary relay
+contactor
+auxiliary contact
+seal-in / holding circuit
+start circuit
+stop circuit
+remote start / remote stop
+interlock
+limit switch
+overload relay
+fuse / circuit breaker
+motor starter
+control transformer / control power supply
+pilot light / indicator
+emergency-stop device
+safety relay / safety controller
+safe torque off
+main disconnect / isolation
