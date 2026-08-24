@@ -1,0 +1,19 @@
+DTE
+DCE
+point-to-point link
+signal common / ground reference
+single-ended signaling
+MARK state
+SPACE state
+TXD
+RXD
+RTS
+CTS
+DTR
+DSR
+DCD
+RI
+timing / clock interchange circuits
+connector and pin-assignment interface subsets
+hardware handshaking
+UART asynchronous framing (common companion, not the same standard)

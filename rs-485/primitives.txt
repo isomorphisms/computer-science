@@ -1,0 +1,18 @@
+balanced differential signaling
+A / B differential pair
+multipoint bus
+multiple drivers
+multiple receivers
+driver enable / tri-state
+half-duplex two-wire arrangement
+full-duplex four-wire arrangement
+unit load
+termination
+failsafe / idle biasing
+receiver differential threshold
+common-mode range
+main bus / trunk topology
+stubs
+transmit-to-receive turnaround
+signal reference / ground considerations
+protocol / addressing / character framing supplied separately
