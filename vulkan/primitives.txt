@@ -1,0 +1,41 @@
+instance
+layers and extensions
+physical device
+logical device
+queue families and queues
+device memory
+buffers
+buffer views
+images
+image views
+samplers
+descriptors
+descriptor set layouts
+descriptor pools and descriptor sets
+pipeline layouts and push constants
+shader modules and SPIR-V
+pipelines
+pipeline cache
+command pools
+command buffers
+dynamic state
+primitive topology
+draw commands
+compute dispatch
+transfer, clear, blit, and resolve commands
+dynamic rendering
+render passes, subpasses, and framebuffers
+pipeline stages and access scopes
+fences
+semaphores
+events
+pipeline and memory barriers
+image layouts and layout transitions
+queue-family ownership transfers
+query pools and queries
+surfaces, swapchains, and presentation
+sparse resources
+device addresses
+external memory and synchronization
+mesh and task shading
+acceleration structures and ray tracing

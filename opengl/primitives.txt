@@ -1,0 +1,35 @@
+context
+global context state
+object names and lifetimes
+buffer objects
+texture objects
+sampler objects
+renderbuffer objects
+framebuffer objects
+vertex array objects
+shader objects
+program objects
+program pipeline objects
+transform feedback objects
+query objects
+sync objects
+vertex specification
+geometric primitive topology
+draw commands
+instancing and indirect drawing
+shader compilation, linking, and use
+texture and image transfer
+framebuffer operations
+viewport and scissor
+rasterization and culling
+depth and stencil tests
+blending, logical operations, and write masks
+compute dispatch
+shader storage and image binding
+memory barriers
+transform feedback
+queries and conditional rendering
+synchronization
+readback
+clear, copy, blit, and invalidate
+debug and introspection
