@@ -6,7 +6,7 @@ A record should preserve:
 
 - the operation's meaning, preconditions, invariants, and acceptable approximation or error;
 - provenance and the distinction between a mathematical idea, paper pseudocode, and an actual implementation;
-- shapes, dimensions, raggedness, algebraic identities, and padding identities that may enable later transformations;
+- shape relations, computable dimension expressions, raggedness, algebraic identities, and padding identities that may enable later transformations; dimensions are not restricted to literals known before execution;
 - alternative representations and variants without flattening them into one package name;
 - reference cases or tests that allow a selected implementation to be checked.
 

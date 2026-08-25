@@ -1,6 +1,6 @@
 # Architectural compilation: programming by goals, choices, and recombination
 
-Status: reconciled design notes; the implementation is still in progress.
+Status: reconciled design notes. ComputerScience planner/compiler implementation has not started in this repository.
 
 This document deliberately distinguishes three kinds of statement:
 
@@ -15,7 +15,7 @@ The catalogs in this repository are inputs to that work. A large body of prose i
 The system should:
 
 - begin with semantic and mathematical intent rather than a preselected library, language, or representation;
-- preserve computable dimensions, shapes, ragged structure, algebraic identities, and other useful static facts for as long as possible;
+- preserve dimension computations and relationships, shapes, ragged structure, algebraic identities, and other semantic facts for as long as possible; "computable" does not mean every dimension is a literal known before execution;
 - search among concrete algorithms and platform primitives using explicit assumptions, conservative calculations, measurements, and recorded failures;
 - emit an inspectable plan that says what was selected, what was rejected, and why;
 - produce small, readable, target-specific programs rather than carrying the design-time catalog into the deployed result;
@@ -117,7 +117,7 @@ The operation is `decodeSwipe`. `offline`, `small`, `low-latency`, and `low-memo
 
 Some of these are hard constraints. Some are preferences. Some are aesthetic choices. Some choices reveal new consequential questions.
 
-The name "adverb" is provisional, but the separation is useful. The current leaning is that architectural adverbs belong primarily to ComputerScience's search problem. Idriç/Edric may need to carry the static facts that make those choices possible, especially dimensions and shapes, without becoming the owner of every architectural preference.
+The name "adverb" is provisional, but the separation is useful. The current leaning is that architectural adverbs belong primarily to ComputerScience's search problem. Idriç/Edric should carry the computable structure that makes those choices possible—dimension expressions and relationships, shapes, raggedness, and algebraic meaning—without becoming the owner of every architectural preference. Some of those facts may become known only after an input is validated or another value is computed.
 
 ## Programming as a branching Q&A
 
@@ -202,32 +202,36 @@ Therefore the architectural system should preserve provenance and assumptions ra
 
 ## Keep the semantic layer above disposable target languages
 
-C is not the universal intermediate representation for this project. It may be useful as disposable terminal output for a CPU path, but lowering everything through C too early would erase the shapes, dimensions, maps, reductions, padding identities, and algebraic equivalences that the architectural stage needs.
+C is not the universal intermediate representation for this project. It is one optional disposable terminal output for a CPU lowering—for example, RefC-generated C handed to Android NDK/Clang. It is not required, it does not define the shared CPU/GPU contract, and it must not mediate the GPU route. Lowering through C before architectural selection would erase the shapes, dimension relations, maps, reductions, padding identities, and algebraic equivalences that the architectural stage needs.
 
 A working division of responsibility is:
 
 ```text
 Idriç / Edric
-  -> preserve semantic intent and computable static facts
+  -> preserve semantic intent, computable sizes and shapes, raggedness, and algebra
 ComputerScience
-  -> compare architectural alternatives using constraints and evidence
+  -> compare alternatives and emit a shared typed plan with evidence
 selected typed plan
   -> target-specific lowering
-     -> direct CPU code or a disposable terminal language
+     -> direct CPU code or optional terminal C -> native toolchain
      -> typed shader IR -> GLSL ES -> Android GPU driver
 ```
 
-The exact boundary is still experimental, but semantic information must not disappear merely because a familiar backend language is convenient.
+The exact boundary is still experimental, but semantic information must not disappear merely because a familiar backend language is convenient. Conversely, a target restriction such as the current GLSL backend's fixed shader arrays is evidence for a lowering decision, not a reason to erase ragged semantics from the source.
 
 ## First vertical slice: SURFER
 
-SURFER is the first concrete end-to-end test because it contains mathematical intent, ragged data, vector operations, and both CPU and GPU implementation choices.
+SURFER is the first concrete end-to-end test and the initial single-user research environment. It exposes mathematical intent, variable polynomial sizes, vector operations, and meaningful CPU/GPU choices without requiring the planner to solve every domain at once.
 
-The historical first CPU target for the known Android device is ARMv7-A with Thumb-2 and NEON. That must not be silently rewritten as AArch64 merely from a CPU marketing name: the installed ABI and operating environment have to be measured. The GPU path should preserve a typed mathematical/shader representation until it lowers to GLSL ES. Numeric inner loops should not acquire boxing or a C-shaped semantic model by accident.
+There are already two distinct kinds of implementation evidence outside this repository. The Algebraic Variety Explorer mobile app is a working CPU-only Java renderer built from Christian Stussak's jsurf code; it is the behavioral and visual oracle. The Idris-to-GLSL ES repository contains a real restricted compiler backend and a bounded SURFER-style root-search capability test; that test is neither a complete renderer nor a robust root isolator. Neither is an implemented ComputerScience planner.
 
-The nearest-root Christian Java renderer is a behavioral and visual oracle, not the desired architecture. Homotopy-specific S/T behavior belongs in the Homotopy layer rather than being baked into a generic renderer.
+The slice needs one shared typed rendering contract above the CPU/GPU split. The first CPU evidence route may use RefC-generated C followed by Android NDK/Clang and an ARMv7 native library. On that route C is disposable terminal output, not the shared IR. Direct Thumb-2/NEON emission remains a later research candidate, and the installed ABI and usable features must be measured rather than inferred from a processor name. The GPU route should preserve the shared plan into a typed shader representation and lower it to GLSL ES. CPU host code may feed assets, uniforms, and frame state to the GPU without forcing shader computation through C.
 
-Acceptance for this slice is not "we wrote catalog notes." It is an explicit path from a small semantic input through a recorded architectural decision to a result comparable with the existing renderer, with measurements and rejected choices retained.
+The fixed-array restriction in the existing shader backend is a target fact. Ragged semantic data may later lower through offsets, padding with an identity, specialization, multiple kernels, or rejection; it should not be silently redescribed as fixed merely to fit that backend.
+
+Christian Stussak's nearest-opaque Java renderer is an oracle, not the desired architecture. Homotopy-specific S/T behavior belongs in the Homotopy layer rather than being baked into a generic renderer.
+
+Acceptance is not "we wrote catalog notes." It requires executable CPU and GPU paths from a small semantic input through a shared typed plan, comparison of hit/miss, first-hit distance, normals, and images against the oracle within stated tolerances, target-specific measurements, and a reproducible record of selected and rejected choices. A first CPU milestone may precede GPU integration, but the vertical slice is not complete until both paths execute and can be checked.
 
 ## SHARK² / swipe decoding as a candidate example
 
@@ -303,9 +307,11 @@ Calculations should be conservative where the inputs are uncertain: preserve ran
 
 ## Implementation status and experiments
 
-The repository is still building its evidence base and textual schemas. It does not yet contain a working planner, constraint solver, autotuner, or end-to-end compiler. That is an honest implementation boundary, not a reason to make the notes sound more complete than the software.
+This repository contains catalogs and prose schemas, not an executable component model, observation store, verifier, planner, constraint solver, autotuner, or end-to-end ComputerScience compiler. Those catalogs were capture and reference work; their size is not evidence that planner implementation has begun.
 
-SURFER is the first intended vertical slice. The IB/eyebrowser work and Field Mouse may become additional trials for process composition, data movement, and target selection, but they are exploratory until their inputs, outputs, and acceptance criteria are written down.
+Implemented neighboring work should be named precisely rather than absorbed into that claim: Idriç is a real compiler line, the separate Idris-to-GLSL ES backend is real target-lowering work, and the Java SURFER app is a real CPU renderer/oracle. The next step is to connect and measure the smallest shared SURFER CPU/GPU slice and write one manual selection trace. Only then is there enough concrete evidence to implement the smallest useful planner/chooser.
+
+SURFER remains the first intended vertical slice. The IB/eyebrowser work and Field Mouse may become additional trials for process composition, data movement, and target selection, but they are exploratory until their inputs, outputs, and acceptance criteria are written down.
 
 ## Open design questions
 
