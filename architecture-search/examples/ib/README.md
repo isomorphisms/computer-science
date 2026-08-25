@@ -24,7 +24,7 @@ The [IB repository](https://github.com/isomorphisms/ib) already contains executa
 - an Idriç browser core with duplicate-preserving history, rebuildable indices, storage classification, and a deterministic workbench for 10,000 known URLs, 32 logical tabs, and 3- or 10-tab resident limits;
 - progressive information prepaint and scientific prefetch paths;
 - [IB PR #16](https://github.com/isomorphisms/ib/pull/16), a network-free Android prepaint viewer with tappable links, search handoff, and atomic replacement of partial projections;
-- [IB PR #19](https://github.com/isomorphisms/ib/pull/19), the ICU search/fetch and prepaint handoff.
+- [IB PR #19](https://github.com/isomorphisms/ib/pull/19), the Grease/shell ICU search/fetch boundary feeding the Idriç prepaint path.
 
 Those are implemented components and boundaries. They are not an implemented ComputerScience planner, and the missing return path between #16 and #19 is still concrete work.
 
@@ -34,8 +34,8 @@ Start with one search query entered in the Android prepaint viewer.
 
 1. Convert the search text into the exact search request.
 2. Send the request through the Termux command bridge.
-3. Fetch through ICU.
-4. Store fetched bytes in disposable cache.
+3. Have Grease/shell invoke ICU to fetch.
+4. Let Grease/shell place fetched bytes in disposable cache.
 5. Run Idriç information extraction and prepaint.
 6. Write a local prepaint artifact.
 7. Atomically replace the page in the network-free viewer.
@@ -45,9 +45,9 @@ The trace must preserve which process owns each step and the exact artifacts cro
 
 ### Hard constraints
 
-- The display APK has no Internet permission and does not use WebView.
-- ICU, invoked through the Termux command bridge, owns network fetch for this first path.
-- Idriç owns browser state, information extraction, and the renderer-neutral prepaint model.
+- The display APK has no Internet permission, does not use WebView, and owns neither browser state nor search/network policy.
+- Grease/shell, reached through the Termux command bridge, owns executable network/fetch orchestration; ICU is the fetch primitive for this first path.
+- Idriç owns browser state, policy and invariants, information extraction, and the renderer-neutral prepaint model.
 - Durable tabs, visits, and user decisions remain separate from disposable response, prepaint, and renderer caches.
 - A useful prepaint appears before optional heavyweight rendering.
 - Link and linked-image targets survive extraction and painting.
@@ -58,7 +58,7 @@ The trace must preserve which process owns each step and the exact artifacts cro
 
 At minimum, compare:
 
-1. ICU fetch followed by Idriç prepaint and the network-free viewer;
+1. Grease/shell invoking ICU, followed by Idriç prepaint and the network-free viewer;
 2. handing the request to an external browser;
 3. escalating after prepaint to a heavier IB renderer.
 
