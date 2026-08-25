@@ -1,6 +1,27 @@
 # Architectural compilation: programming by goals, choices, and recombination
 
-Status: rough engineering / programming-language-design notes.
+Status: reconciled design notes; the implementation is still in progress.
+
+This document deliberately distinguishes three kinds of statement:
+
+- **settled direction**: goals and constraints repeatedly stated for this project;
+- **working hypothesis**: a design worth testing, not yet an architectural commitment;
+- **open question**: something the implementation experiments must answer.
+
+The catalogs in this repository are inputs to that work. A large body of prose is not, by itself, an architectural compiler or evidence that a choice has been implemented.
+
+## Settled direction
+
+The system should:
+
+- begin with semantic and mathematical intent rather than a preselected library, language, or representation;
+- preserve computable dimensions, shapes, ragged structure, algebraic identities, and other useful static facts for as long as possible;
+- search among concrete algorithms and platform primitives using explicit assumptions, conservative calculations, measurements, and recorded failures;
+- emit an inspectable plan that says what was selected, what was rejected, and why;
+- produce small, readable, target-specific programs rather than carrying the design-time catalog into the deployed result;
+- favor small programs with explicit inputs and outputs that can terminate and be composed by a shell or by Grease, instead of assuming that every problem wants one long-lived monolithic process.
+
+These are constraints on the work. The exact language for goals, the location of adverbs, and the role of an LLM are not settled.
 
 ## The question
 
@@ -47,7 +68,7 @@ It then recombines existing work rather than requiring the high-level programmer
 
 This does not mean implementations are interchangeable. It means their differences should become data available to the design process.
 
-## The algorithm catalog is a partial order, not a menu with one winner
+## A fixed comparison usually has no single winner
 
 There is usually no single best implementation.
 
@@ -72,7 +93,7 @@ Implementations differ in:
 - ease of inspection;
 - failure behavior.
 
-The design space is therefore closer to a dense partially ordered or Pareto space than a ranked list.
+After the target, workload, metrics, uncertainty, and hard constraints have been made explicit, the remaining candidates will often form a partial order or Pareto frontier rather than a ranked list. Before that context is fixed, claiming that one catalog entry dominates another is usually meaningless.
 
 A higher-level program can state requirements and preferences without prematurely naming one algorithm.
 
@@ -96,7 +117,7 @@ The operation is `decodeSwipe`. `offline`, `small`, `low-latency`, and `low-memo
 
 Some of these are hard constraints. Some are preferences. Some are aesthetic choices. Some choices reveal new consequential questions.
 
-The name "adverb" is provisional, but the separation is useful.
+The name "adverb" is provisional, but the separation is useful. The current leaning is that architectural adverbs belong primarily to ComputerScience's search problem. Idriç/Edric may need to carry the static facts that make those choices possible, especially dimensions and shapes, without becoming the owner of every architectural preference.
 
 ## Programming as a branching Q&A
 
@@ -106,7 +127,7 @@ Some questions can be answered mechanically:
 
 - this implementation requires a server, but the program is offline;
 - this component cannot run on the target architecture;
-- these licenses cannot be combined;
+- the current licensing policy or legal review flags this combination;
 - these interfaces do not compose;
 - this memory bound cannot be met.
 
@@ -119,11 +140,11 @@ Other questions belong to the programmer:
 
 A design choice can expose another branch of questions. The system should surface the implications rather than silently make consequential choices.
 
-An LLM is potentially useful here because the initial goal and many preferences are naturally underspecified. The LLM need not be the final compiler or trusted proof engine. It can mediate between human intent and an explicit, mechanically checkable architecture.
+Whether an LLM should be an advisor, question-asker, catalog researcher, candidate generator, critic, or something else remains open. Any LLM contribution must be recorded as a proposal or explanation, not silently promoted to fact. Measurements, derivations, contracts, and the selected plan must remain inspectable and replayable without trusting the model's memory. Consulting another model, memoizing paper calculations, and eventually bootstrapping more of the design process are experiments, not settled architecture.
 
 ## Ordinary compilation remains ordinary
 
-Once architectural choices have been resolved, the lower stage should become boring again:
+Once architectural choices have been resolved, the lower stage should become comparatively mechanical and reproducible:
 
 ```text
 goal
@@ -135,6 +156,14 @@ goal
 ```
 
 The expensive, uncertain, conversational part should not need to happen on every rebuild. The selected architecture can be committed and reproduced.
+
+"Mechanical" does not mean trivial. ABI boundaries, linkers, build systems, drivers, packaging, and deployment still exist. The point is that they should not silently reopen already settled architectural questions.
+
+## Small programs and composition
+
+The default unit should be a program that does one intelligible job, exposes its data boundary, and can finish. A shell or Grease can connect such programs. Long-lived services and fused processes remain possible when measurements justify them, but they are implementation choices rather than the assumed shape of the system.
+
+This changes the architectural search problem. The planner must be able to compare not only algorithms inside a process, but also boundaries between programs: serialization, copying, startup time, persistence, streaming, failure isolation, and opportunities to fuse stages. Composition should stay visible even when a particular target eventually benefits from fusion.
 
 ## STL as an incomplete precursor
 
@@ -171,9 +200,38 @@ Someone who implements a paper in C or C++ necessarily reifies many things the p
 
 Therefore the architectural system should preserve provenance and assumptions rather than flattening everything into a package name such as `shark2`.
 
-## SHARK² / swipe decoding as a concrete example
+## Keep the semantic layer above disposable target languages
 
-A phone keyboard gives a manageable example.
+C is not the universal intermediate representation for this project. It may be useful as disposable terminal output for a CPU path, but lowering everything through C too early would erase the shapes, dimensions, maps, reductions, padding identities, and algebraic equivalences that the architectural stage needs.
+
+A working division of responsibility is:
+
+```text
+Idriç / Edric
+  -> preserve semantic intent and computable static facts
+ComputerScience
+  -> compare architectural alternatives using constraints and evidence
+selected typed plan
+  -> target-specific lowering
+     -> direct CPU code or a disposable terminal language
+     -> typed shader IR -> GLSL ES -> Android GPU driver
+```
+
+The exact boundary is still experimental, but semantic information must not disappear merely because a familiar backend language is convenient.
+
+## First vertical slice: SURFER
+
+SURFER is the first concrete end-to-end test because it contains mathematical intent, ragged data, vector operations, and both CPU and GPU implementation choices.
+
+The historical first CPU target for the known Android device is ARMv7-A with Thumb-2 and NEON. That must not be silently rewritten as AArch64 merely from a CPU marketing name: the installed ABI and operating environment have to be measured. The GPU path should preserve a typed mathematical/shader representation until it lowers to GLSL ES. Numeric inner loops should not acquire boxing or a C-shaped semantic model by accident.
+
+The nearest-root Christian Java renderer is a behavioral and visual oracle, not the desired architecture. Homotopy-specific S/T behavior belongs in the Homotopy layer rather than being baked into a generic renderer.
+
+Acceptance for this slice is not "we wrote catalog notes." It is an explicit path from a small semantic input through a recorded architectural decision to a result comparable with the existing renderer, with measurements and rejected choices retained.
+
+## SHARK² / swipe decoding as a candidate example
+
+A phone keyboard may provide another manageable example. The candidate families below are a working survey, not a settled decision that SHARK² or any other family is the correct decoder.
 
 High-level intent might be:
 
@@ -201,7 +259,7 @@ The selected decoder can later be compiled as ordinary code. The giant catalog a
 
 ## Beware abstract algorithms whose assumptions fail on real machines
 
-A major reason this upper layer needs empirical information is that an elegant decomposition in an algorithm or language model may not correspond to good execution on real hardware.
+A major reason this upper layer needs empirical information is that an elegant decomposition in an algorithm or programming-language model may not correspond to good execution on real hardware.
 
 Examples of hidden assumptions include:
 
@@ -241,10 +299,19 @@ Potential contract dimensions include:
 
 This is partly a programming-language problem and partly an empirical software-engineering problem.
 
+Calculations should be conservative where the inputs are uncertain: preserve ranges or intervals, state assumptions, and avoid laundering estimates into exact-looking scores. Raw benchmark observations and failures should remain attached to the target, ABI, workload, implementation revision, compiler/driver versions, and active adverbs. Derived summaries can be regenerated; discarded observations cannot.
+
+## Implementation status and experiments
+
+The repository is still building its evidence base and textual schemas. It does not yet contain a working planner, constraint solver, autotuner, or end-to-end compiler. That is an honest implementation boundary, not a reason to make the notes sound more complete than the software.
+
+SURFER is the first intended vertical slice. The IB/eyebrowser work and Field Mouse may become additional trials for process composition, data movement, and target selection, but they are exploratory until their inputs, outputs, and acceptance criteria are written down.
+
 ## Open design questions
 
 - What is the representation of a high-level goal before implementation choices are resolved?
 - Which "adverbs" belong in the language, which belong in project policy, and which belong only in the conversational design layer?
+- Which facts must Idriç/Edric preserve in types or return values so independently terminating programs can still compose safely?
 - How are hard constraints distinguished from preferences?
 - How are incomparable candidates represented and explained?
 - How much of component compatibility can be proven statically?
@@ -253,10 +320,11 @@ This is partly a programming-language problem and partly an empirical software-e
 - When should architectural choices remain unresolved until deployment or runtime?
 - How are selected decisions frozen so an ordinary rebuild remains deterministic?
 - What is the right boundary between an LLM elaborator, a constraint solver, a package resolver, an autotuner, and the conventional compiler?
+- Can useful architectural search proceed without an LLM, and which model-assisted steps can be checked or replayed deterministically?
 - Can the architectural stage produce a useful explanation of *why* each important choice was made?
 
 ## Working thesis
 
 High-level programming need not mean pretending implementation details do not exist. It can mean **deferring implementation decisions until the system has enough information to make or surface them intelligently**.
 
-The programmer specifies goals, invariants, tastes, and consequential tradeoffs. A large architectural system searches and recombines known algorithms and implementations, discovers consequences, asks questions where human judgment is actually needed, and produces an explicit architecture. Conventional compilation then turns that architecture into executable code.
+The programmer specifies goals, invariants, tastes, and consequential tradeoffs. An architectural system searches and recombines known algorithms and implementations, discovers consequences, asks questions where human judgment is actually needed, and produces an explicit architecture with an evidence trail. Small target programs can then be generated and composed through ordinary system interfaces. The size of the design-time knowledge base is not a virtue by itself; its value is whether it helps produce a better, smaller, understandable result.
