@@ -48,7 +48,7 @@ The AArch32 floating-point and Advanced SIMD register file is physically distinc
 
 The important overlap is, for example, `d0 = {s0,s1}` and `q0 = {d0,d1}`. These are not aliases of the general-purpose registers.
 
-At a procedure-call boundary, `s16`-`s31` / `d8`-`d15` are call-preserved. `s0`-`s15` / `d0`-`d7` are call-clobbered and are the VFP argument/result bank in the VFP calling-standard variant.
+At a procedure-call boundary, `s16`-`s31` / `d8`-`d15` / `q4`-`q7` are call-preserved. `s0`-`s15` / `d0`-`d7` / `q0`-`q3` are call-clobbered and form the VFP argument/result bank in the VFP calling-standard variant. The additional `d16`-`d31` / `q8`-`q15` registers, when present, are also call-clobbered.
 
 ## Three different meanings people collapse into "soft float"
 
