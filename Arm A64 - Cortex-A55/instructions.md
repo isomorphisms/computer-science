@@ -29,6 +29,8 @@ An instruction mnemonic can have multiple operand forms and encodings; a flat mn
 
 The Cortex-A55 also supports **A32** and **T32** in AArch32 state. They are not mixed into this file because they are separate instruction sets with their own encodings and large legacy surfaces.
 
+Android's `arm64-v8a` ABI has an Armv8.0 instruction-set baseline. That ABI name does not promise the later Cortex-A55 features cataloged here. Code distributed for general `arm64-v8a` devices must either stay within the ABI baseline or select later instructions only after build-time device targeting or runtime feature detection; the entries here describe this core/device feature envelope, not the ABI minimum.
+
 ## Sources
 
 - MIRO A1 specification: https://www.newegg.com/miro-a1-5-99-4g-black/p/23B-00MN-00003
