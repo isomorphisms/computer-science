@@ -165,13 +165,29 @@ The default unit should be a program that does one intelligible job, exposes its
 
 This changes the architectural search problem. The planner must be able to compare not only algorithms inside a process, but also boundaries between programs: serialization, copying, startup time, persistence, streaming, failure isolation, and opportunities to fuse stages. Composition should stay visible even when a particular target eventually benefits from fusion.
 
+## Data-structure vocabulary
+
+Keep representation names semantically distinct throughout the catalog and its
+explanations:
+
+- a list remains a list when its length is known;
+- use `SizedList` or `ListOfLength` when a list's length is part of its
+  type, including when that length is computed and packaged with the result;
+- use `Array` for indexed contiguous storage;
+- reserve `Vector` for a genuine mathematical or numeric vector.
+
+A known length is a contract about a value. It does not by itself change a
+list's representation or turn the list into a vector. Upstream compatibility
+names may remain at their boundary, but they should not determine the
+architecture's vocabulary.
+
 ## STL as an incomplete precursor
 
 The C++ Standard Template Library is relevant as an early approximation of part of this idea.
 
 STL separates generic algorithms from data structures and gives programmers reusable implementations instead of forcing them to reimplement every solved problem. But it still leaves much of the architectural selection burden on the programmer.
 
-The programmer is still expected to decide whether the problem wants a vector, deque, list, map, unordered map, and so forth, often before having a good reason to know. Generic programming makes the selected pieces reusable, but does not solve the higher-level question:
+The programmer is still expected to decide whether the problem wants a dynamic array, deque, list, map, unordered map, and so forth, often before having a good reason to know. Generic programming makes the selected pieces reusable, but does not solve the higher-level question:
 
 > Given my actual goal and constraints, which representation and algorithm should I choose?
 
