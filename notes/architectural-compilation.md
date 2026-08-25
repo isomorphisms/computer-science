@@ -311,7 +311,7 @@ This repository contains catalogs and prose schemas, not an executable component
 
 Implemented neighboring work should be named precisely rather than absorbed into that claim: Idriç is a real compiler line, the separate Idris-to-GLSL ES backend is real target-lowering work, and the Java SURFER app is a real CPU renderer/oracle. The next step is to connect and measure the smallest shared SURFER CPU/GPU slice and write one manual selection trace. Only then is there enough concrete evidence to implement the smallest useful planner/chooser.
 
-SURFER remains the first intended vertical slice. The IB/eyebrowser work and Field Mouse may become additional trials for process composition, data movement, and target selection, but they are exploratory until their inputs, outputs, and acceptance criteria are written down.
+SURFER remains the first intended vertical slice. IB/eyebrowser is the committed second slice and belongs on a separate development branch: it tests process composition, renderer selection, data movement, durable/cache separation, and resource policy rather than numerical CPU/GPU lowering. Its first concrete trace should connect the existing network-free Android prepaint viewer to the ICU search/fetch handoff and atomically paint the returned Idriç projection. Field Mouse remains exploratory until its inputs, outputs, and acceptance criteria are written down.
 
 ## Open design questions
 

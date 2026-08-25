@@ -32,6 +32,7 @@ This is a working boundary, not a final language design. The existing GLSL backe
 2. Execute and measure concrete lowerings. The first CPU route may use RefC-generated C as disposable output for Android NDK/Clang; a direct Thumb-2/NEON backend remains later research. The existing GLSL ES backend is partial implementation evidence, not a complete SURFER GPU renderer.
 3. Record one reproducible selection trace with calculations, measurements, rejected paths, and oracle comparison.
 4. Implement the smallest planner/chooser justified by that trace. Do not mistake catalog growth for progress on this step.
+5. Exercise that machinery against the separately developed IB slice so the design does not overfit numerical CPU/GPU lowering. IB is committed follow-on work, even though SURFER remains first.
 
 ## Directories
 

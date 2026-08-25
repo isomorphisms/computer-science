@@ -11,4 +11,4 @@ Each example should state:
 - measurements to collect;
 - the selected and rejected choices that the planner must explain.
 
-SURFER is the first intended vertical slice. IB/eyebrowser and Field Mouse are possible later trials, not committed scope.
+SURFER is the first intended vertical slice. IB/eyebrowser is a committed second slice developed separately; it should test process boundaries, renderer selection, durable/cache separation, and resource-constrained work rather than being folded into SURFER. Field Mouse remains a possible later trial, not committed scope.

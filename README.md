@@ -15,7 +15,7 @@ The repository is currently in the design, cataloging, and evidence-gathering st
 
 Relevant implementations exist in neighboring repositories: the [Idriç compiler](https://github.com/isomorphisms/Idric), the [Idris-to-GLSL ES backend](https://github.com/isomorphisms/idris-shader-backend), and the existing [CPU-only Java SURFER app](https://github.com/isomorphisms/algebraic-variety-explorer-mobile). They are implementation evidence and possible lowering machinery, not an implemented ComputerScience planner.
 
-The first intended vertical slice is SURFER. Other possible trials, including IB/eyebrowser and Field Mouse, remain exploratory until their interfaces and acceptance criteria are specified.
+The first intended vertical slice is SURFER. IB/eyebrowser is the committed second slice and will be developed on a separate branch so it can test process composition, renderer choice, data movement, and resource policy without diluting the SURFER lowering trace. Field Mouse remains a possible later trial until its interface and acceptance criteria are specified.
 
 ## Source discipline
 
