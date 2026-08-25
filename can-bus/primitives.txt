@@ -1,0 +1,28 @@
+physical bus
+CAN_H / CAN_L
+dominant bit
+recessive bit
+bit time and sample point
+synchronization and resynchronization
+11-bit identifier
+29-bit extended identifier
+non-destructive arbitration
+data frame
+remote frame (Classical CAN)
+error frame
+overload frame
+start of frame
+control field / DLC
+data field
+CRC field
+ACK field
+end of frame / intermission
+bit stuffing
+error detection
+error counters and error-active / error-passive / bus-off
+CAN FD FDF / BRS / ESI
+CAN FD larger payload
+CAN XL
+transceiver
+controller
+termination

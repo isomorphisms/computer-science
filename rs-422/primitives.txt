@@ -1,0 +1,13 @@
+balanced differential signaling
+generator
+receiver
+one generator per circuit
+multiple receivers per circuit
+A / B differential pair
+termination
+receiver differential threshold
+common-mode range
+point-to-point link
+multidrop one-driver link
+full-duplex two-pair arrangement
+protocol / character framing supplied separately

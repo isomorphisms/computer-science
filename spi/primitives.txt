@@ -1,0 +1,22 @@
+host
+client
+SCK
+MOSI / SDO
+MISO / SDI
+chip select / CS / SS
+shift register
+clock cycle
+full-duplex exchange
+clock polarity (CPOL)
+clock phase (CPHA)
+SPI modes 0-3
+bit order
+word width
+clock rate
+transaction / chip-select interval
+multiple clients
+daisy chain
+three-wire / half-duplex variant
+dual / quad / octal SPI variants
+dummy clocks / dummy data
+no built-in addressing, acknowledgement or packet format
