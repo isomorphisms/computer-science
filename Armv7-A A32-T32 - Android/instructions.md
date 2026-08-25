@@ -115,15 +115,14 @@ The difference from `softfp` is the call boundary: no `r0/r1` <-> `s0/s1` transf
 
 ### True software-float compilation
 
-With `-mfloat-abi=soft`, a compiler does not emit the VFP arithmetic instruction for this operation. A typical ARM EABI sequence is conceptually:
+With `-mfloat-abi=soft`, a compiler does not emit the VFP arithmetic instruction for this operation. For a wrapper with exactly this signature, a typical ARM EABI implementation can tail-call the software helper:
 
 ```asm
 add:
-    bl       __aeabi_fadd
-    bx       lr
+    b        __aeabi_fadd
 ```
 
-Here `r0` and `r1` carry the two 32-bit floating bit patterns and `r0` carries the result. The helper routine implements the operation rather than the caller emitting `VADD.F32`.
+Here `r0` and `r1` carry the two 32-bit floating bit patterns and `r0` carries the result. In a larger function the compiler can instead issue `BL __aeabi_fadd` while preserving its own return address in the normal function prologue.
 
 That is the case where "software float" is actually a useful description.
 
