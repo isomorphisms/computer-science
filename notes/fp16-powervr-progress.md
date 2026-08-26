@@ -1,118 +1,126 @@
 # FP16 / PowerVR progress — 2026-08-26
 
-This note tracks the specific question: how close is the Idriç/Idris GLSL ES
-backend to carrying real F16 semantics into a PowerVR shader on the ARMv7
-Android target?
+This note tracks how close the Idris/Idriç GLSL ES path is to carrying deliberate
+F16 semantics into algebraic-surface shaders and ultimately onto the PowerVR
+Android target.
 
-The important distinction is between declaring an F16 policy and actually
-carrying F16 through the compiler. FP16 is a first-class semantic target here,
-not merely a late optimization to apply after an F32 implementation is done.
+FP16 is a first-class semantic target here, not merely a late optimization of an
+F32 implementation. Several different claims must remain separate: selecting a
+whole-shader width, carrying width on each typed IR value, exposing width in the
+source language, validating generated GLSL, and proving numerical behavior on
+the actual GPU.
 
-## What exists now
+## Executable whole-shader mode now exists
 
-On `idris-shader-backend:float-semantics-f16-f32`:
+On `idris-shader-backend:soap-f16-mode` (PR #11, stacked on PR #10), the compiler
+now accepts `float-width=f16|f32`, with F32 remaining the default.
 
-- `FloatWidth` explicitly distinguishes `F16` from `F32`.
-- F16 selects GLSL ES `mediump`; F32 selects `highp`.
-- portable GLES does not claim that `mediump` is exact binary16.
-- the PowerVR profile explicitly records native mediump FP16 and vector FP16.
-- the backend test suite now checks width distinction, scalar lowering, vec2,
-  vec3, vec4, unsupported vector widths, portable-vs-PowerVR capability claims,
-  and that introducing F16 policy does not silently demote an existing F32
-  shader.
-- the complete shader-backend check is green with 41 tests at the current
-  FP16 branch head used for this note.
+- F16 compilation renders the checked IR as `F16` / `F16xN` and emits
+  `precision mediump float;`.
+- F32 compilation renders the checked IR as `F32` / `F32xN` and emits
+  `precision highp float;`.
+- unsupported widths such as F64 are rejected rather than silently mapped to a
+  supported precision.
+- the end-to-end compiler check validates the generated F16 fragment with
+  `glslangValidator`.
+- the exact PR #11 head used by the downstream consumers is
+  `66214e3da0443fe4887062549e9ef5810c586dd7`, whose CI is green.
 
-This is useful compiler policy and regression coverage. It is not yet proof of
-an F16 shader dataflow.
+This is a substantive advance beyond the earlier precision-policy-only state.
+The compiler can now select a complete shader's semantic width and carry that
+selection through the checked diagnostic IR and emitter.
 
-## What is still missing
+## What this still does not mean
 
-The checked shader IR still has width-erasing forms such as `TFloat`, `TVec n`,
-and `AFloat`. It does not yet carry `F16` or `F32` as part of scalar, vector, or
-array types. There are no explicit F16->F32 or F32->F16 conversion operations in
-that IR, and the normal emitter still renders the existing value types as
-plain GLSL `float`/`vecN` under the existing F32 production path.
+The underlying shader value-type constructors are still width-erasing forms
+such as `TFloat`, `TVec n`, and `AFloat`; the selected width is a compilation
+mode rather than an independent width attached to every scalar, vector, and
+array value. Consequently this does not yet provide mixed-width shader IR.
 
-`Shader.Source` also still exposes the old `Double`-shaped scalar vocabulary.
-Therefore the current branch should not be described as compiling an Idriç F16
-program end to end.
+There are still no explicit F16->F32 or F32->F16 conversion operations in that
+IR, and `Shader.Source` remains the existing `Double`-shaped source vocabulary.
+A program requests F16 through the compiler directive rather than a source-level
+F16 type.
 
-The next compiler milestone should be visible as several independent changes,
-not one vague "FP16 support" flag:
+Portable GLES `mediump` also remains only a precision-class contract. The
+PowerVR profile records the intended native FP16 behavior, but generated
+`mediump` GLSL by itself does not prove exact IEEE binary16 execution on every
+GPU or even on the target device.
 
-1. scalar width carried in checked IR;
-2. vector width carried independently of lane count;
-3. fixed-array element width carried;
-4. explicit F16<->F32 conversions;
-5. width-aware emission;
-6. source/API surface able to request F16 deliberately;
-7. generated F16 shader validated by the GLES toolchain;
-8. real PowerVR device compile/link/render evidence;
-9. framebuffer comparison against the chosen numerical oracle.
+## Two downstream dogfood paths
 
-## Soap is not current proof
+SOAP PR #5 now consumes the selectable mode through Edriç. It pins the backend
+head above, compiles every playable `.idric` surface with
+`--directive float-width=f16`, requires mediump fragment output, matches the
+fullscreen vertex precision, and records `GL_MEDIUM_FLOAT` precision-format
+information from GLES. This is real application integration, but it is still
+not a framebuffer numerical oracle.
 
-The Soap `edric-surface-player` branch contains the intended Edriç -> GLSL ES ->
-Android plumbing, but its latest checked workflow does not establish the path.
-The Edriç-built GLSL compiler step succeeded; compilation of the `.idric`
-surfaces to GLSL ES then failed, so the APK build and emulator stages were
-skipped. Soap also uses the existing `Double` -> GLSL float path rather than an
-F16 source/dataflow contract.
+Algebraic Variety Explorer PR #12 adds an independent compiler-consumer gate.
+The existing app remains the Java CPU renderer; the new lane does not pretend to
+replace its runtime renderer. Instead it takes the backend's bounded
+`SurferRootSearch` shader, which has the algebraic-surface eight-coefficient and
+fixed bracket/bisection structure, and compiles it both ways:
 
-Soap is therefore useful integration scaffolding, not evidence that the FP16
-PowerVR path works.
+1. F16: require F16/F16xN checked IR, mediump GLSL, and GLSL validation;
+2. F32: require F32/F32xN checked IR, highp GLSL, and GLSL validation;
+3. F64: require rejection and no generated fragment.
 
-## Parallel AICI observations and tests
+It retains the checked IR, GLSL, validation output, backend revision, and hashes
+as downstream evidence. This is intentionally a compiler dogfood gate rather
+than a claim of PowerVR execution.
 
-AICI's `compiler-backend-observations` branch now has a dedicated
-`fp16_probes.tsv` surface. It observes both positive policy/test markers and the
-currently absent implementation milestones. In particular it separately tracks:
+## AICI now distinguishes these milestones
 
-- semantic F16/F32 declaration;
-- F16 mediump and F32 highp policy;
-- portable exact-F16 refusal;
-- PowerVR native-F16 profile;
-- the matching backend tests;
-- scalar/vector/array width in IR;
-- explicit conversions;
-- width-aware emitter plumbing;
-- source-level F16 exposure;
-- a PowerVR framebuffer oracle in CI.
+AICI PR #14 follows `idris-shader-backend:soap-f16-mode` rather than the older
+policy-only branch. Its FP16 baseline now promotes the established whole-shader
+compiler facts: directive parsing, selected-width checked IR, selected-width
+emission, invalid-width rejection, and the executable F16 compiler test.
 
-AICI also has a passing baseline contract rather than merely printing that
-matrix. `fp16_expected.tsv` lists the FP16/PowerVR facts that are established
-now, and `fp16_baseline.py` fails if one disappears, becomes unreadable, or
-changes unexpectedly. Its own tests exercise the passing case plus missing,
-regressed, and unreadable observations. The current AICI compiler-backend
-observer run passes the general matrix, the FP16 matrix, and this baseline gate.
+The older future rows remain independent observations: per-value scalar/vector/
+array width in IR, explicit conversions, source-level F16, and the real PowerVR
+framebuffer oracle.
 
-The not-yet-implemented IR, conversion, emitter, source-F16, and device-oracle
-rows deliberately remain observations rather than gates. When one becomes a
-real established capability, it should be promoted into the expected baseline
-instead of relying on prose to remember that milestone.
+AICI also has `fp16_consumers.tsv` for the Algebraic Variety Explorer branch,
+recording the exact backend pin and the F16/F32 compile, IR, GLSL-validation,
+F64-rejection, and evidence-retention surfaces. These literal probes establish
+that the consumer gate is present; the consumer's own CI is the stronger
+compile evidence.
 
 ## ComputerScience watcher
 
-The ComputerScience backend watcher now follows the active FP16 shader branch
-and the active AICI observer branch every six hours. It combines the ordinary
-cross-backend feature matrix with the FP16/PowerVR matrix, diffs that against
-the last recorded state, and logs a change packet when anything moves.
+The ComputerScience PR #12 watcher now follows:
 
-The interpretation prompt explicitly treats FP16 as a semantic design target
-and warns against confusing policy/source markers with end-to-end device
-evidence. The deterministic TSV remains authoritative; LLM commentary is only
-an interpretation of the change.
+- AICI `compiler-backend-observations`;
+- `idric-arm-thumb:idric-ir-first-slice`;
+- `idris-arm-backend:main`;
+- `idris-shader-backend:soap-f16-mode`;
+- `algebraic-variety-explorer-mobile:dogfood/idris-shader-f16`.
 
-The historical baseline is intentionally left untouched. The first watcher run
-with the expanded FP16 surface should therefore record the new observations and
-recent backend changes rather than retroactively rewriting the baseline.
+It combines AICI's general backend matrix, FP16/PowerVR matrix, and downstream
+FP16 consumer matrix into the deterministic change record. The interpretation
+prompt explicitly distinguishes whole-shader selection from per-value typed IR
+and distinguishes a downstream compile/validation gate from target numerical
+proof.
 
-## Current reading
+The historical baseline remains unchanged. The newly watched compiler and
+consumer facts should appear as changes rather than being retroactively written
+into the original observation.
 
-The work is in a good architectural position but before the decisive compiler
-slice. The policy has been named, PowerVR has been separated from generic GLES,
-and the test/watch surfaces now make the missing pieces explicit. The next
-meaningful advance is not more precision prose: it is making width a real part
-of the typed shader dataflow and then driving a deliberately F16 fixture through
-to an actual PowerVR framebuffer.
+## Next decisive numerical layer
+
+The next useful work is numerical rather than another textual precision marker.
+At minimum, compare F16 and F32 on deliberately sensitive and boundary cases:
+
+1. known ULP boundaries and adjacent representable values;
+2. cancellation such as `(1 + epsilon) - 1`;
+3. binary16 normal/subnormal, overflow, underflow, infinity, and zero boundaries;
+4. division near small denominators;
+5. square root and any shader transcendental operations that materially affect the renderers;
+6. vector operations such as dot, length, and normalize;
+7. algebraic-surface root-search cases near tangency or closely spaced roots.
+
+The strongest target gate then compiles, links, renders, and reads back the
+actual PowerVR framebuffer and compares it with a deliberately chosen CPU
+reference/oracle. That is where claims about real F16 numerical behavior should
+be promoted from observation to evidence.
