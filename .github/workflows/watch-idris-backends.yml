@@ -47,8 +47,16 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: isomorphisms/idris-shader-backend
-          ref: float-semantics-f16-f32
+          ref: soap-f16-mode
           path: _watch/idris-shader-backend
+          fetch-depth: 0
+
+      - name: Check out Algebraic Variety Explorer FP16 consumer
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/algebraic-variety-explorer-mobile
+          ref: dogfood/idris-shader-f16
+          path: _watch/algebraic-variety-explorer-mobile
           fetch-depth: 0
 
       - name: Recompute deterministic observations
@@ -67,11 +75,17 @@ jobs:
             --root idris-shader-backend=_watch/idris-shader-backend \
             --output _watch/fp16-observations.tsv
 
+          python3 _watch/aici/compiler_backends/probe.py \
+            --matrix _watch/aici/compiler_backends/fp16_consumers.tsv \
+            --root algebraic-variety-explorer-mobile=_watch/algebraic-variety-explorer-mobile \
+            --output _watch/fp16-consumer-observations.tsv
+
           {
             head -n 1 _watch/general-observations.tsv
             {
               tail -n +2 _watch/general-observations.tsv
               tail -n +2 _watch/fp16-observations.tsv
+              tail -n +2 _watch/fp16-consumer-observations.tsv
             } | LC_ALL=C sort -t $'\t' -k1,1 -k2,2
           } > _watch/current-observations.tsv
 
@@ -83,8 +97,11 @@ jobs:
               "$(git -C _watch/idric-arm-thumb rev-parse HEAD)" "$(git -C _watch/idric-arm-thumb rev-parse HEAD)"
             printf 'idris-arm-backend\tmain\t%s\t%s\n' \
               "$(git -C _watch/idris-arm-backend rev-parse HEAD)" "$(git -C _watch/idris-arm-backend rev-parse HEAD)"
-            printf 'idris-shader-backend\tfloat-semantics-f16-f32\t%s\t%s\n' \
+            printf 'idris-shader-backend\tsoap-f16-mode\t%s\t%s\n' \
               "$(git -C _watch/idris-shader-backend rev-parse HEAD)" "$(git -C _watch/idris-shader-backend rev-parse HEAD)"
+            printf 'algebraic-variety-explorer-mobile\tdogfood/idris-shader-f16\t%s\t%s\n' \
+              "$(git -C _watch/algebraic-variety-explorer-mobile rev-parse HEAD)" \
+              "$(git -C _watch/algebraic-variety-explorer-mobile rev-parse HEAD)"
           } > _watch/current-revisions.tsv
 
       - name: Detect changes and build raw diffs
@@ -108,9 +125,9 @@ jobs:
             changed=1
           fi
 
-          for backend in idric-arm-thumb idris-arm-backend idris-shader-backend; do
-            old="$(awk -F '\t' -v b="$backend" '$1==b {print $3}' compiler-backends/last-seen-revisions.tsv)"
-            new="$(awk -F '\t' -v b="$backend" '$1==b {print $3}' _watch/current-revisions.tsv)"
+          for source in idric-arm-thumb idris-arm-backend idris-shader-backend algebraic-variety-explorer-mobile; do
+            old="$(awk -F '\t' -v b="$source" '$1==b {print $3}' compiler-backends/last-seen-revisions.tsv)"
+            new="$(awk -F '\t' -v b="$source" '$1==b {print $3}' _watch/current-revisions.tsv)"
             if [ "$old" != "$new" ]; then
               changed=1
             fi
@@ -152,9 +169,10 @@ jobs:
 
           FP16 is a first-class semantic target in this project, especially for PowerVR;
           do not frame it as merely a late optimization after an F32 implementation. Track
-          whether F16/F32 width is actually carried through IR, vectors, arrays, conversion,
-          emission, source types, and real-device framebuffer evidence. A policy marker or
-          source test is not equivalent to end-to-end FP16 execution evidence.
+          whole-shader width selection separately from width carried by each IR value,
+          vectors, arrays, explicit conversions, source types, and real-device framebuffer
+          evidence. A downstream compile-and-GLSL-validation gate is stronger than a source
+          marker, but it is still not proof of exact binary16 execution on the target GPU.
           EOF
             echo
             echo '=== INITIAL BACKEND INTERPRETATION ==='
@@ -200,6 +218,26 @@ jobs:
                   '*.idr' '*.idric' Makefile README.md '.github/**' || true
               fi
             done
+
+            old_ave="$(awk -F '\t' '$1=="algebraic-variety-explorer-mobile" {print $3}' compiler-backends/last-seen-revisions.tsv)"
+            new_ave="$(awk -F '\t' '$1=="algebraic-variety-explorer-mobile" {print $3}' _watch/current-revisions.tsv)"
+            if [ "$old_ave" != "$new_ave" ]; then
+              echo
+              echo '=== algebraic-variety-explorer-mobile CHANGES ==='
+              if [ -n "$old_ave" ]; then
+                git -C _watch/algebraic-variety-explorer-mobile log --oneline "$old_ave..$new_ave" || true
+                git -C _watch/algebraic-variety-explorer-mobile diff --stat "$old_ave..$new_ave" -- \
+                  ci/check-idris-shader-dogfood.sh .github/workflows/idris-shader-dogfood.yml || true
+                git -C _watch/algebraic-variety-explorer-mobile diff --unified=5 "$old_ave..$new_ave" -- \
+                  ci/check-idris-shader-dogfood.sh .github/workflows/idris-shader-dogfood.yml || true
+              else
+                echo 'Newly watched downstream consumer.'
+                git -C _watch/algebraic-variety-explorer-mobile show --stat --oneline "$new_ave" -- \
+                  ci/check-idris-shader-dogfood.sh .github/workflows/idris-shader-dogfood.yml || true
+                git -C _watch/algebraic-variety-explorer-mobile show --format= --unified=5 "$new_ave" -- \
+                  ci/check-idris-shader-dogfood.sh .github/workflows/idris-shader-dogfood.yml || true
+              fi
+            fi
           } > _watch/llm-prompt.md
 
       - name: Interpret changed evidence with Copilot
