@@ -19,11 +19,11 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Check out AICI
+      - name: Check out active AICI backend observer
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: isomorphisms/ai-ci
-          ref: main
+          ref: compiler-backend-observations
           path: _watch/aici
           fetch-depth: 0
 
@@ -43,32 +43,47 @@ jobs:
           path: _watch/idris-arm-backend
           fetch-depth: 0
 
-      - name: Check out Idris GLSL ES backend
+      - name: Check out active FP16 GLSL ES backend
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: isomorphisms/idris-shader-backend
-          ref: main
+          ref: float-semantics-f16-f32
           path: _watch/idris-shader-backend
           fetch-depth: 0
 
       - name: Recompute deterministic observations
+        shell: bash
         run: |
+          set -euo pipefail
           python3 _watch/aici/compiler_backends/probe.py \
             --matrix _watch/aici/compiler_backends/probes.tsv \
             --root idric-arm-thumb=_watch/idric-arm-thumb \
             --root idris-arm-backend=_watch/idris-arm-backend \
             --root idris-shader-backend=_watch/idris-shader-backend \
-            --output _watch/current-observations.tsv
+            --output _watch/general-observations.tsv
+
+          python3 _watch/aici/compiler_backends/probe.py \
+            --matrix _watch/aici/compiler_backends/fp16_probes.tsv \
+            --root idris-shader-backend=_watch/idris-shader-backend \
+            --output _watch/fp16-observations.tsv
+
+          {
+            head -n 1 _watch/general-observations.tsv
+            {
+              tail -n +2 _watch/general-observations.tsv
+              tail -n +2 _watch/fp16-observations.tsv
+            } | LC_ALL=C sort -t $'\t' -k1,1 -k2,2
+          } > _watch/current-observations.tsv
 
           aici_scope="$(git -C _watch/aici rev-parse 'HEAD:compiler_backends' 2>/dev/null || printf missing)"
           {
             printf 'source\tref\tcommit\tscope\n'
-            printf 'ai-ci\tmain\t%s\t%s\n' "$(git -C _watch/aici rev-parse HEAD)" "$aici_scope"
+            printf 'ai-ci\tcompiler-backend-observations\t%s\t%s\n' "$(git -C _watch/aici rev-parse HEAD)" "$aici_scope"
             printf 'idric-arm-thumb\tidric-ir-first-slice\t%s\t%s\n' \
               "$(git -C _watch/idric-arm-thumb rev-parse HEAD)" "$(git -C _watch/idric-arm-thumb rev-parse HEAD)"
             printf 'idris-arm-backend\tmain\t%s\t%s\n' \
               "$(git -C _watch/idris-arm-backend rev-parse HEAD)" "$(git -C _watch/idris-arm-backend rev-parse HEAD)"
-            printf 'idris-shader-backend\tmain\t%s\t%s\n' \
+            printf 'idris-shader-backend\tfloat-semantics-f16-f32\t%s\t%s\n' \
               "$(git -C _watch/idris-shader-backend rev-parse HEAD)" "$(git -C _watch/idris-shader-backend rev-parse HEAD)"
           } > _watch/current-revisions.tsv
 
@@ -134,10 +149,19 @@ jobs:
           separate facts from hypotheses. Pay special attention to whether two backends
           target the same architecture before attributing a difference to hardware. Note
           when a probe changed without a backend capability necessarily changing.
+
+          FP16 is a first-class semantic target in this project, especially for PowerVR;
+          do not frame it as merely a late optimization after an F32 implementation. Track
+          whether F16/F32 width is actually carried through IR, vectors, arrays, conversion,
+          emission, source types, and real-device framebuffer evidence. A policy marker or
+          source test is not equivalent to end-to-end FP16 execution evidence.
           EOF
             echo
-            echo '=== INITIAL INTERPRETATION ==='
+            echo '=== INITIAL BACKEND INTERPRETATION ==='
             cat notes/idris-backend-observations.md
+            echo
+            echo '=== FP16 / POWERVR PROGRESS NOTE ==='
+            cat notes/fp16-powervr-progress.md
             echo
             echo '=== PREVIOUS OBSERVATIONS ==='
             cat compiler-backends/last-seen-observations.tsv
@@ -227,7 +251,7 @@ jobs:
           } > _watch/issue.md
 
           gh issue create \
-            --title "Idris backend observation change $(date -u +%F)" \
+            --title "Idris / FP16 backend observation change $(date -u +%F)" \
             --body-file _watch/issue.md
 
       - name: Advance last-seen state
