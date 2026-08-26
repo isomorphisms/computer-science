@@ -20,6 +20,8 @@ On `idris-shader-backend:float-semantics-f16-f32`:
   vec3, vec4, unsupported vector widths, portable-vs-PowerVR capability claims,
   and that introducing F16 policy does not silently demote an existing F32
   shader.
+- the complete shader-backend check is green with 41 tests at the current
+  FP16 branch head used for this note.
 
 This is useful compiler policy and regression coverage. It is not yet proof of
 an F16 shader dataflow.
@@ -61,7 +63,7 @@ F16 source/dataflow contract.
 Soap is therefore useful integration scaffolding, not evidence that the FP16
 PowerVR path works.
 
-## Parallel AICI observations
+## Parallel AICI observations and tests
 
 AICI's `compiler-backend-observations` branch now has a dedicated
 `fp16_probes.tsv` surface. It observes both positive policy/test markers and the
@@ -78,9 +80,17 @@ currently absent implementation milestones. In particular it separately tracks:
 - source-level F16 exposure;
 - a PowerVR framebuffer oracle in CI.
 
-A `present=0` for one of the latter rows is expected evidence of unfinished
-work, not an AICI failure. The point is to make progress and regressions
-mechanically visible.
+AICI also has a passing baseline contract rather than merely printing that
+matrix. `fp16_expected.tsv` lists the FP16/PowerVR facts that are established
+now, and `fp16_baseline.py` fails if one disappears, becomes unreadable, or
+changes unexpectedly. Its own tests exercise the passing case plus missing,
+regressed, and unreadable observations. The current AICI compiler-backend
+observer run passes the general matrix, the FP16 matrix, and this baseline gate.
+
+The not-yet-implemented IR, conversion, emitter, source-F16, and device-oracle
+rows deliberately remain observations rather than gates. When one becomes a
+real established capability, it should be promoted into the expected baseline
+instead of relying on prose to remember that milestone.
 
 ## ComputerScience watcher
 
@@ -93,6 +103,10 @@ The interpretation prompt explicitly treats FP16 as a semantic design target
 and warns against confusing policy/source markers with end-to-end device
 evidence. The deterministic TSV remains authoritative; LLM commentary is only
 an interpretation of the change.
+
+The historical baseline is intentionally left untouched. The first watcher run
+with the expanded FP16 surface should therefore record the new observations and
+recent backend changes rather than retroactively rewriting the baseline.
 
 ## Current reading
 
