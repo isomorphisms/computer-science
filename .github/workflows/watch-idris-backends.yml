@@ -193,12 +193,13 @@ jobs:
             exit 0
           fi
 
-          if ! npm install -g @github/copilot@latest; then
+          if ! curl -fsSL https://gh.io/copilot-install | VERSION="v0.0.369" PREFIX="$HOME/.local" bash; then
             echo 'LLM interpretation was requested but Copilot CLI installation failed.' > _watch/llm-note.md
             exit 0
           fi
+          export PATH="$HOME/.local/bin:$PATH"
 
-          if ! copilot -p "$(cat _watch/llm-prompt.md)" --no-ask-user > _watch/llm-note.md; then
+          if ! copilot -p "$(cat _watch/llm-prompt.md)" -s --no-ask-user > _watch/llm-note.md; then
             echo 'LLM interpretation was requested but Copilot CLI inference failed.' > _watch/llm-note.md
           fi
 
