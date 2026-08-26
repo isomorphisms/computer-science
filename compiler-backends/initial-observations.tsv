@@ -1,0 +1,34 @@
+backend	metric	readable	present	path	needle
+idric-arm-thumb	arith.add	1	1	src/Backend/ARMThumb/IR.idr	AddFloat32
+idric-arm-thumb	arith.divide	1	0	src/Backend/ARMThumb/IR.idr	DivideFloat32
+idric-arm-thumb	arith.multiply	1	1	src/Backend/ARMThumb/IR.idr	MultiplyFloat32
+idric-arm-thumb	arith.sqrt	1	0	src/Backend/ARMThumb/IR.idr	SquareRootFloat32
+idric-arm-thumb	arith.subtract	1	0	src/Backend/ARMThumb/IR.idr	SubtractFloat32
+idric-arm-thumb	control.compare	1	0	src/Backend/ARMThumb/IR.idr	data Comparison
+idric-arm-thumb	control.select	1	0	src/Backend/ARMThumb/IR.idr	RSelect
+idric-arm-thumb	memory.indexed_load	1	0	src/Backend/ARMThumb/IR.idr	LoadFloat32
+idric-arm-thumb	vector.typed	1	0	src/Backend/ARMThumb/IR.idr	TVec
+idric-arm-thumb	verify.no_external_runtime	1	1	Makefile	nm -u $(AFFINE_OBJECT)
+idric-arm-thumb	verify.target_artifact	1	1	Makefile	Tag_THUMB_ISA_use: Thumb-2
+idris-arm-backend	arith.add	1	1	src/Backend/ARMv7/IR.idr	AddFloat32
+idris-arm-backend	arith.divide	1	1	src/Backend/ARMv7/IR.idr	DivideFloat32
+idris-arm-backend	arith.multiply	1	1	src/Backend/ARMv7/IR.idr	MultiplyFloat32
+idris-arm-backend	arith.sqrt	1	1	src/Backend/ARMv7/IR.idr	SquareRootFloat32
+idris-arm-backend	arith.subtract	1	1	src/Backend/ARMv7/IR.idr	SubtractFloat32
+idris-arm-backend	control.compare	1	0	src/Backend/ARMv7/IR.idr	data Comparison
+idris-arm-backend	control.select	1	0	src/Backend/ARMv7/IR.idr	RSelect
+idris-arm-backend	memory.indexed_load	1	1	src/Backend/ARMv7/IR.idr	LoadFloat32
+idris-arm-backend	vector.typed	1	0	src/Backend/ARMv7/IR.idr	TVec
+idris-arm-backend	verify.no_external_runtime	1	1	Makefile	-Wl,--no-undefined
+idris-arm-backend	verify.target_artifact	1	1	Makefile	Tag_THUMB_ISA_use: Thumb-2
+idris-shader-backend	arith.add	1	1	src/Backend/GLSLES/IR.idr	FAdd
+idris-shader-backend	arith.divide	1	1	src/Backend/GLSLES/IR.idr	FDiv
+idris-shader-backend	arith.multiply	1	1	src/Backend/GLSLES/IR.idr	FMul
+idris-shader-backend	arith.sqrt	1	1	src/Backend/GLSLES/IR.idr	FSqrt
+idris-shader-backend	arith.subtract	1	1	src/Backend/GLSLES/IR.idr	FSub
+idris-shader-backend	control.compare	1	1	src/Backend/GLSLES/IR.idr	data Comparison
+idris-shader-backend	control.select	1	1	src/Backend/GLSLES/IR.idr	RSelect
+idris-shader-backend	memory.indexed_load	1	1	src/Backend/GLSLES/IR.idr	RArrayIndex
+idris-shader-backend	vector.typed	1	1	src/Backend/GLSLES/IR.idr	TVec
+idris-shader-backend	verify.no_external_runtime	1	0	Makefile	--no-undefined
+idris-shader-backend	verify.target_artifact	1	1	Makefile	tools/check_glsl.py

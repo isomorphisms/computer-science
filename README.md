@@ -11,7 +11,7 @@ The top-level catalogs are intentionally not being moved merely to make the tree
 
 ## Current status
 
-The repository is currently in the design, cataloging, and evidence-gathering stage. Everything on `main` is prose, and this branch adds prose scaffolding only. There is no executable component schema, observation store, verifier, SURFER selection trace, planner, constraint solver, autotuner, or ComputerScience compiler here. Catalog entries and proposed directory structure do not count as implementations.
+The repository is still primarily in the design, cataloging, and evidence-gathering stage. The first small executable observation path is now defined under [`compiler-backends/`](compiler-backends/) with a scheduled watcher in `.github/workflows/`: it consumes AICI's deterministic compiler-backend probes, preserves an initial and last-seen state, and logs changed evidence for later interpretation. This is an observation mechanism, not an implemented component schema, verifier, SURFER selection trace, planner, constraint solver, autotuner, or ComputerScience compiler.
 
 Relevant implementations exist in neighboring repositories: the [Idriç compiler](https://github.com/isomorphisms/Idric), the [Idris-to-GLSL ES backend](https://github.com/isomorphisms/idris-shader-backend), and the existing [CPU-only Java SURFER app](https://github.com/isomorphisms/algebraic-variety-explorer-mobile). They are implementation evidence and possible lowering machinery, not an implemented ComputerScience planner.
 

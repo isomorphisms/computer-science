@@ -1,0 +1,244 @@
+name: watch Idris compiler backends
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out ComputerScience state
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Check out AICI
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/ai-ci
+          ref: main
+          path: _watch/aici
+          fetch-depth: 0
+
+      - name: Check out active Idriç ARM/Thumb backend
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/idric-arm-thumb
+          ref: idric-ir-first-slice
+          path: _watch/idric-arm-thumb
+          fetch-depth: 0
+
+      - name: Check out Idris ARM backend
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/idris-arm-backend
+          ref: main
+          path: _watch/idris-arm-backend
+          fetch-depth: 0
+
+      - name: Check out Idris GLSL ES backend
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/idris-shader-backend
+          ref: main
+          path: _watch/idris-shader-backend
+          fetch-depth: 0
+
+      - name: Recompute deterministic observations
+        run: |
+          python3 _watch/aici/compiler_backends/probe.py \
+            --matrix _watch/aici/compiler_backends/probes.tsv \
+            --root idric-arm-thumb=_watch/idric-arm-thumb \
+            --root idris-arm-backend=_watch/idris-arm-backend \
+            --root idris-shader-backend=_watch/idris-shader-backend \
+            --output _watch/current-observations.tsv
+
+          aici_scope="$(git -C _watch/aici rev-parse 'HEAD:compiler_backends' 2>/dev/null || printf missing)"
+          {
+            printf 'source\tref\tcommit\tscope\n'
+            printf 'ai-ci\tmain\t%s\t%s\n' "$(git -C _watch/aici rev-parse HEAD)" "$aici_scope"
+            printf 'idric-arm-thumb\tidric-ir-first-slice\t%s\t%s\n' \
+              "$(git -C _watch/idric-arm-thumb rev-parse HEAD)" "$(git -C _watch/idric-arm-thumb rev-parse HEAD)"
+            printf 'idris-arm-backend\tmain\t%s\t%s\n' \
+              "$(git -C _watch/idris-arm-backend rev-parse HEAD)" "$(git -C _watch/idris-arm-backend rev-parse HEAD)"
+            printf 'idris-shader-backend\tmain\t%s\t%s\n' \
+              "$(git -C _watch/idris-shader-backend rev-parse HEAD)" "$(git -C _watch/idris-shader-backend rev-parse HEAD)"
+          } > _watch/current-revisions.tsv
+
+      - name: Detect changes and build raw diffs
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          diff -u compiler-backends/last-seen-observations.tsv _watch/current-observations.tsv \
+            > _watch/observation.diff || true
+          diff -u compiler-backends/last-seen-revisions.tsv _watch/current-revisions.tsv \
+            > _watch/revision.diff || true
+
+          changed=0
+          if ! cmp -s compiler-backends/last-seen-observations.tsv _watch/current-observations.tsv; then
+            changed=1
+          fi
+
+          old_aici_scope="$(awk -F '\t' '$1=="ai-ci" {print $4}' compiler-backends/last-seen-revisions.tsv)"
+          new_aici_scope="$(awk -F '\t' '$1=="ai-ci" {print $4}' _watch/current-revisions.tsv)"
+          if [ "$old_aici_scope" != "$new_aici_scope" ]; then
+            changed=1
+          fi
+
+          for backend in idric-arm-thumb idris-arm-backend idris-shader-backend; do
+            old="$(awk -F '\t' -v b="$backend" '$1==b {print $3}' compiler-backends/last-seen-revisions.tsv)"
+            new="$(awk -F '\t' -v b="$backend" '$1==b {print $3}' _watch/current-revisions.tsv)"
+            if [ "$old" != "$new" ]; then
+              changed=1
+            fi
+          done
+
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+
+          {
+            echo '### Idris backend watcher'
+            echo
+            echo '```text'
+            cat _watch/current-revisions.tsv
+            echo
+            cat _watch/current-observations.tsv
+            echo '```'
+            if [ "$changed" = 1 ]; then
+              echo
+              echo 'Change detected; an interpretation/logging pass will run.'
+            else
+              echo
+              echo 'No change since the last recorded observation.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build LLM evidence packet
+        if: steps.changes.outputs.changed == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            cat <<'EOF'
+          You are writing a short technical observation for the ComputerScience repository.
+          The deterministic TSV is evidence; do not override it. Explain what changed and
+          whether it looks like surface nomenclature, implementation maturity, a
+          target/architecture consequence, or a possible omission/regression. Explicitly
+          separate facts from hypotheses. Pay special attention to whether two backends
+          target the same architecture before attributing a difference to hardware. Note
+          when a probe changed without a backend capability necessarily changing.
+          EOF
+            echo
+            echo '=== INITIAL INTERPRETATION ==='
+            cat notes/idris-backend-observations.md
+            echo
+            echo '=== PREVIOUS OBSERVATIONS ==='
+            cat compiler-backends/last-seen-observations.tsv
+            echo
+            echo '=== CURRENT OBSERVATIONS ==='
+            cat _watch/current-observations.tsv
+            echo
+            echo '=== REVISION DIFF ==='
+            cat _watch/revision.diff
+            echo
+            echo '=== OBSERVATION DIFF ==='
+            cat _watch/observation.diff
+
+            old_aici="$(awk -F '\t' '$1=="ai-ci" {print $3}' compiler-backends/last-seen-revisions.tsv)"
+            new_aici="$(awk -F '\t' '$1=="ai-ci" {print $3}' _watch/current-revisions.tsv)"
+            old_aici_scope="$(awk -F '\t' '$1=="ai-ci" {print $4}' compiler-backends/last-seen-revisions.tsv)"
+            new_aici_scope="$(awk -F '\t' '$1=="ai-ci" {print $4}' _watch/current-revisions.tsv)"
+            if [ "$old_aici_scope" != "$new_aici_scope" ]; then
+              echo
+              echo '=== AICI PROBE CHANGES ==='
+              git -C _watch/aici diff --stat "$old_aici..$new_aici" -- \
+                compiler_backends .github/workflows/compiler-backend-observations.yml || true
+              git -C _watch/aici diff --unified=5 "$old_aici..$new_aici" -- \
+                compiler_backends .github/workflows/compiler-backend-observations.yml || true
+            fi
+
+            for backend in idric-arm-thumb idris-arm-backend idris-shader-backend; do
+              old="$(awk -F '\t' -v b="$backend" '$1==b {print $3}' compiler-backends/last-seen-revisions.tsv)"
+              new="$(awk -F '\t' -v b="$backend" '$1==b {print $3}' _watch/current-revisions.tsv)"
+              if [ "$old" != "$new" ]; then
+                echo
+                echo "=== $backend CHANGES ==="
+                git -C "_watch/$backend" log --oneline "$old..$new" || true
+                git -C "_watch/$backend" diff --stat "$old..$new" || true
+                git -C "_watch/$backend" diff --unified=5 "$old..$new" -- \
+                  '*.idr' '*.idric' Makefile README.md '.github/**' || true
+              fi
+            done
+          } > _watch/llm-prompt.md
+
+      - name: Interpret changed evidence with Copilot
+        if: steps.changes.outputs.changed == '1'
+        shell: bash
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: |
+          set -u
+          if [ -z "${COPILOT_GITHUB_TOKEN:-}" ]; then
+            cat > _watch/llm-note.md <<'EOF'
+          LLM interpretation was requested but `COPILOT_GITHUB_TOKEN` is not configured.
+          The raw deterministic evidence below is still logged.
+          EOF
+            exit 0
+          fi
+
+          if ! npm install -g @github/copilot@latest; then
+            echo 'LLM interpretation was requested but Copilot CLI installation failed.' > _watch/llm-note.md
+            exit 0
+          fi
+
+          if ! copilot -p "$(cat _watch/llm-prompt.md)" --no-ask-user > _watch/llm-note.md; then
+            echo 'LLM interpretation was requested but Copilot CLI inference failed.' > _watch/llm-note.md
+          fi
+
+      - name: Log changed evidence
+        if: steps.changes.outputs.changed == '1'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '# Idris backend observation change'
+            echo
+            echo '## Revisions'
+            echo '```diff'
+            cat _watch/revision.diff
+            echo '```'
+            echo
+            echo '## Deterministic observations'
+            echo '```diff'
+            cat _watch/observation.diff
+            echo '```'
+            echo
+            echo '## LLM interpretation'
+            cat _watch/llm-note.md
+          } > _watch/issue.md
+
+          gh issue create \
+            --title "Idris backend observation change $(date -u +%F)" \
+            --body-file _watch/issue.md
+
+      - name: Advance last-seen state
+        if: steps.changes.outputs.changed == '1'
+        shell: bash
+        run: |
+          cp _watch/current-observations.tsv compiler-backends/last-seen-observations.tsv
+          cp _watch/current-revisions.tsv compiler-backends/last-seen-revisions.tsv
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add compiler-backends/last-seen-observations.tsv compiler-backends/last-seen-revisions.tsv
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record Idris backend observation state'
+            git push origin HEAD:main
+          fi
