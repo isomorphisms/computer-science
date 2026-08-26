@@ -2,7 +2,7 @@
 
 This directory is a small executable deviation from the rest of `computer-science`: it turns renderer/backend observations into tests. It is **not** a renderer, a compiler, or a claim that every vector operation belongs on a GPU. It is a place to make the CPU/GPU boundary explicit before the Idriç shader backend and its consumers depend on implicit driver behavior.
 
-The immediate case study is ManimGL / [`isomorphisms/manimi`](https://github.com/isomorphisms/manimi). As of 2026-08-26 its `master` includes upstream Manim commit [`9d57bcf9`](https://github.com/3b1b/manim/commit/9d57bcf9edea2486f214e190931de2a5537f23c1) and the checked Ithon rewrite. The name is now historically misleading: upstream ported the renderer from OpenGL to `wgpu`/WGSL in [`e4a7bca7`](https://github.com/3b1b/manim/commit/e4a7bca73777bdc16853f896634e4647efde1d5). That makes it unusually useful here: it is a real graphics program preserving the same visible semantics while changing the GPU API underneath.
+The immediate case study is ManimGL / [`isomorphisms/manimi`](https://github.com/isomorphisms/manimi). As of 2026-08-26 its `master` includes upstream Manim commit [`9d57bcf9`](https://github.com/3b1b/manim/commit/9d57bcf9edea2486f214e190931de2a5537f23c1) and the checked Ithon rewrite. The name is now historically misleading: upstream ported the renderer from OpenGL to `wgpu`/WGSL in [`e4a7bca7`](https://github.com/3b1b/manim/commit/e4a7bca73777bdc16853f896a2525a4f03fa7687). That makes it unusually useful here: it is a real graphics program preserving the same visible semantics while changing the GPU API underneath.
 
 ## What ManimGL exposes
 
