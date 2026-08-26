@@ -1,0 +1,5 @@
+source	ref	commit	scope
+ai-ci	main	e342fc1e58bde3e7bcb82875b66f721725a600e8	missing
+idric-arm-thumb	idric-ir-first-slice	7e98881997993b4b7188115e686267546db41693	7e98881997993b4b7188115e686267546db41693
+idris-arm-backend	main	663fe5fbdd22249e2ccfecf0ba5e4a43b24a6f85	663fe5fbdd22249e2ccfecf0ba5e4a43b24a6f85
+idris-shader-backend	main	7876b79058d6f59711151a21697369c1cf72df2f	7876b79058d6f59711151a21697369c1cf72df2f

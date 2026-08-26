@@ -1,0 +1,307 @@
+name: watch Idris compiler backends
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  observe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out ComputerScience state
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Check out active AICI backend observer
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/ai-ci
+          ref: compiler-backend-observations
+          path: _watch/aici
+          fetch-depth: 0
+
+      - name: Check out active Idriç ARM/Thumb backend
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/idric-arm-thumb
+          ref: idric-ir-first-slice
+          path: _watch/idric-arm-thumb
+          fetch-depth: 0
+
+      - name: Check out Idris ARM backend
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/idris-arm-backend
+          ref: main
+          path: _watch/idris-arm-backend
+          fetch-depth: 0
+
+      - name: Check out active FP16 GLSL ES backend
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/idris-shader-backend
+          ref: soap-f16-mode
+          path: _watch/idris-shader-backend
+          fetch-depth: 0
+
+      - name: Check out Algebraic Variety Explorer FP16 consumer
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: isomorphisms/algebraic-variety-explorer-mobile
+          ref: dogfood/idris-shader-f16
+          path: _watch/algebraic-variety-explorer-mobile
+          fetch-depth: 0
+
+      - name: Recompute deterministic observations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 _watch/aici/compiler_backends/probe.py \
+            --matrix _watch/aici/compiler_backends/probes.tsv \
+            --root idric-arm-thumb=_watch/idric-arm-thumb \
+            --root idris-arm-backend=_watch/idris-arm-backend \
+            --root idris-shader-backend=_watch/idris-shader-backend \
+            --output _watch/general-observations.tsv
+
+          python3 _watch/aici/compiler_backends/probe.py \
+            --matrix _watch/aici/compiler_backends/fp16_probes.tsv \
+            --root idris-shader-backend=_watch/idris-shader-backend \
+            --output _watch/fp16-observations.tsv
+
+          python3 _watch/aici/compiler_backends/probe.py \
+            --matrix _watch/aici/compiler_backends/fp16_consumers.tsv \
+            --root algebraic-variety-explorer-mobile=_watch/algebraic-variety-explorer-mobile \
+            --output _watch/fp16-consumer-observations.tsv
+
+          {
+            head -n 1 _watch/general-observations.tsv
+            {
+              tail -n +2 _watch/general-observations.tsv
+              tail -n +2 _watch/fp16-observations.tsv
+              tail -n +2 _watch/fp16-consumer-observations.tsv
+            } | LC_ALL=C sort -t $'\t' -k1,1 -k2,2
+          } > _watch/current-observations.tsv
+
+          aici_scope="$(git -C _watch/aici rev-parse 'HEAD:compiler_backends' 2>/dev/null || printf missing)"
+          {
+            printf 'source\tref\tcommit\tscope\n'
+            printf 'ai-ci\tcompiler-backend-observations\t%s\t%s\n' "$(git -C _watch/aici rev-parse HEAD)" "$aici_scope"
+            printf 'idric-arm-thumb\tidric-ir-first-slice\t%s\t%s\n' \
+              "$(git -C _watch/idric-arm-thumb rev-parse HEAD)" "$(git -C _watch/idric-arm-thumb rev-parse HEAD)"
+            printf 'idris-arm-backend\tmain\t%s\t%s\n' \
+              "$(git -C _watch/idris-arm-backend rev-parse HEAD)" "$(git -C _watch/idris-arm-backend rev-parse HEAD)"
+            printf 'idris-shader-backend\tsoap-f16-mode\t%s\t%s\n' \
+              "$(git -C _watch/idris-shader-backend rev-parse HEAD)" "$(git -C _watch/idris-shader-backend rev-parse HEAD)"
+            printf 'algebraic-variety-explorer-mobile\tdogfood/idris-shader-f16\t%s\t%s\n' \
+              "$(git -C _watch/algebraic-variety-explorer-mobile rev-parse HEAD)" \
+              "$(git -C _watch/algebraic-variety-explorer-mobile rev-parse HEAD)"
+          } > _watch/current-revisions.tsv
+
+      - name: Detect changes and build raw diffs
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          diff -u compiler-backends/last-seen-observations.tsv _watch/current-observations.tsv \
+            > _watch/observation.diff || true
+          diff -u compiler-backends/last-seen-revisions.tsv _watch/current-revisions.tsv \
+            > _watch/revision.diff || true
+
+          changed=0
+          if ! cmp -s compiler-backends/last-seen-observations.tsv _watch/current-observations.tsv; then
+            changed=1
+          fi
+
+          old_aici_scope="$(awk -F '\t' '$1=="ai-ci" {print $4}' compiler-backends/last-seen-revisions.tsv)"
+          new_aici_scope="$(awk -F '\t' '$1=="ai-ci" {print $4}' _watch/current-revisions.tsv)"
+          if [ "$old_aici_scope" != "$new_aici_scope" ]; then
+            changed=1
+          fi
+
+          for source in idric-arm-thumb idris-arm-backend idris-shader-backend algebraic-variety-explorer-mobile; do
+            old="$(awk -F '\t' -v b="$source" '$1==b {print $3}' compiler-backends/last-seen-revisions.tsv)"
+            new="$(awk -F '\t' -v b="$source" '$1==b {print $3}' _watch/current-revisions.tsv)"
+            if [ "$old" != "$new" ]; then
+              changed=1
+            fi
+          done
+
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+
+          {
+            echo '### Idris backend watcher'
+            echo
+            echo '```text'
+            cat _watch/current-revisions.tsv
+            echo
+            cat _watch/current-observations.tsv
+            echo '```'
+            if [ "$changed" = 1 ]; then
+              echo
+              echo 'Change detected; an interpretation/logging pass will run.'
+            else
+              echo
+              echo 'No change since the last recorded observation.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build LLM evidence packet
+        if: steps.changes.outputs.changed == '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            cat <<'EOF'
+          You are writing a short technical observation for the ComputerScience repository.
+          The deterministic TSV is evidence; do not override it. Explain what changed and
+          whether it looks like surface nomenclature, implementation maturity, a
+          target/architecture consequence, or a possible omission/regression. Explicitly
+          separate facts from hypotheses. Pay special attention to whether two backends
+          target the same architecture before attributing a difference to hardware. Note
+          when a probe changed without a backend capability necessarily changing.
+
+          FP16 is a first-class semantic target in this project, especially for PowerVR;
+          do not frame it as merely a late optimization after an F32 implementation. Track
+          whole-shader width selection separately from width carried by each IR value,
+          vectors, arrays, explicit conversions, source types, and real-device framebuffer
+          evidence. A downstream compile-and-GLSL-validation gate is stronger than a source
+          marker, but it is still not proof of exact binary16 execution on the target GPU.
+          EOF
+            echo
+            echo '=== INITIAL BACKEND INTERPRETATION ==='
+            cat notes/idris-backend-observations.md
+            echo
+            echo '=== FP16 / POWERVR PROGRESS NOTE ==='
+            cat notes/fp16-powervr-progress.md
+            echo
+            echo '=== PREVIOUS OBSERVATIONS ==='
+            cat compiler-backends/last-seen-observations.tsv
+            echo
+            echo '=== CURRENT OBSERVATIONS ==='
+            cat _watch/current-observations.tsv
+            echo
+            echo '=== REVISION DIFF ==='
+            cat _watch/revision.diff
+            echo
+            echo '=== OBSERVATION DIFF ==='
+            cat _watch/observation.diff
+
+            old_aici="$(awk -F '\t' '$1=="ai-ci" {print $3}' compiler-backends/last-seen-revisions.tsv)"
+            new_aici="$(awk -F '\t' '$1=="ai-ci" {print $3}' _watch/current-revisions.tsv)"
+            old_aici_scope="$(awk -F '\t' '$1=="ai-ci" {print $4}' compiler-backends/last-seen-revisions.tsv)"
+            new_aici_scope="$(awk -F '\t' '$1=="ai-ci" {print $4}' _watch/current-revisions.tsv)"
+            if [ "$old_aici_scope" != "$new_aici_scope" ]; then
+              echo
+              echo '=== AICI PROBE CHANGES ==='
+              git -C _watch/aici diff --stat "$old_aici..$new_aici" -- \
+                compiler_backends .github/workflows/compiler-backend-observations.yml || true
+              git -C _watch/aici diff --unified=5 "$old_aici..$new_aici" -- \
+                compiler_backends .github/workflows/compiler-backend-observations.yml || true
+            fi
+
+            for backend in idric-arm-thumb idris-arm-backend idris-shader-backend; do
+              old="$(awk -F '\t' -v b="$backend" '$1==b {print $3}' compiler-backends/last-seen-revisions.tsv)"
+              new="$(awk -F '\t' -v b="$backend" '$1==b {print $3}' _watch/current-revisions.tsv)"
+              if [ "$old" != "$new" ]; then
+                echo
+                echo "=== $backend CHANGES ==="
+                git -C "_watch/$backend" log --oneline "$old..$new" || true
+                git -C "_watch/$backend" diff --stat "$old..$new" || true
+                git -C "_watch/$backend" diff --unified=5 "$old..$new" -- \
+                  '*.idr' '*.idric' Makefile README.md '.github/**' || true
+              fi
+            done
+
+            old_ave="$(awk -F '\t' '$1=="algebraic-variety-explorer-mobile" {print $3}' compiler-backends/last-seen-revisions.tsv)"
+            new_ave="$(awk -F '\t' '$1=="algebraic-variety-explorer-mobile" {print $3}' _watch/current-revisions.tsv)"
+            if [ "$old_ave" != "$new_ave" ]; then
+              echo
+              echo '=== algebraic-variety-explorer-mobile CHANGES ==='
+              if [ -n "$old_ave" ]; then
+                git -C _watch/algebraic-variety-explorer-mobile log --oneline "$old_ave..$new_ave" || true
+                git -C _watch/algebraic-variety-explorer-mobile diff --stat "$old_ave..$new_ave" -- \
+                  ci/check-idris-shader-dogfood.sh .github/workflows/idris-shader-dogfood.yml || true
+                git -C _watch/algebraic-variety-explorer-mobile diff --unified=5 "$old_ave..$new_ave" -- \
+                  ci/check-idris-shader-dogfood.sh .github/workflows/idris-shader-dogfood.yml || true
+              else
+                echo 'Newly watched downstream consumer.'
+                git -C _watch/algebraic-variety-explorer-mobile show --stat --oneline "$new_ave" -- \
+                  ci/check-idris-shader-dogfood.sh .github/workflows/idris-shader-dogfood.yml || true
+                git -C _watch/algebraic-variety-explorer-mobile show --format= --unified=5 "$new_ave" -- \
+                  ci/check-idris-shader-dogfood.sh .github/workflows/idris-shader-dogfood.yml || true
+              fi
+            fi
+          } > _watch/llm-prompt.md
+
+      - name: Interpret changed evidence with Copilot
+        if: steps.changes.outputs.changed == '1'
+        shell: bash
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: |
+          set -u
+          if [ -z "${COPILOT_GITHUB_TOKEN:-}" ]; then
+            cat > _watch/llm-note.md <<'EOF'
+          LLM interpretation was requested but `COPILOT_GITHUB_TOKEN` is not configured.
+          The raw deterministic evidence below is still logged.
+          EOF
+            exit 0
+          fi
+
+          if ! curl -fsSL https://gh.io/copilot-install | VERSION="v0.0.369" PREFIX="$HOME/.local" bash; then
+            echo 'LLM interpretation was requested but Copilot CLI installation failed.' > _watch/llm-note.md
+            exit 0
+          fi
+          export PATH="$HOME/.local/bin:$PATH"
+
+          if ! copilot -p "$(cat _watch/llm-prompt.md)" -s --no-ask-user > _watch/llm-note.md; then
+            echo 'LLM interpretation was requested but Copilot CLI inference failed.' > _watch/llm-note.md
+          fi
+
+      - name: Log changed evidence
+        if: steps.changes.outputs.changed == '1'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '# Idris backend observation change'
+            echo
+            echo '## Revisions'
+            echo '```diff'
+            cat _watch/revision.diff
+            echo '```'
+            echo
+            echo '## Deterministic observations'
+            echo '```diff'
+            cat _watch/observation.diff
+            echo '```'
+            echo
+            echo '## LLM interpretation'
+            cat _watch/llm-note.md
+          } > _watch/issue.md
+
+          gh issue create \
+            --title "Idris / FP16 backend observation change $(date -u +%F)" \
+            --body-file _watch/issue.md
+
+      - name: Advance last-seen state
+        if: steps.changes.outputs.changed == '1'
+        shell: bash
+        run: |
+          cp _watch/current-observations.tsv compiler-backends/last-seen-observations.tsv
+          cp _watch/current-revisions.tsv compiler-backends/last-seen-revisions.tsv
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add compiler-backends/last-seen-observations.tsv compiler-backends/last-seen-revisions.tsv
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record Idris backend observation state'
+            git push origin HEAD:main
+          fi
