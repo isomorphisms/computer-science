@@ -28,6 +28,7 @@ Related implementation: [`isomorphisms/idris-shader-backend` PR #10](https://git
 - Regenerated the checked IR fixtures and added regression checks that reject a return to width-erasing type names.
 - Added tests for F16/F32 scalar policy, vector policy, generic GLES not claiming exact F16, and the PowerVR native-F16 profile.
 - Added backend documentation linking the implementation to the cross-target contract in this repository.
+- Current-head GitHub CI passed the complete backend checks and the generated-output cleanliness check.
 
 ### Still deliberately not done
 
