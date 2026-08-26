@@ -4,8 +4,10 @@ ComputerScience is an experimental architectural-planning project between semant
 
 This repository currently contains two related kinds of material:
 
-- top-level subject and hardware references, presently including Android input, GPU, analytic-combinatorics, and electronics; CPU/ISA catalogs follow the same top-level reference convention when added;
+- top-level subject and hardware references, presently including Android input, GPU, floating-point semantics, analytic-combinatorics, and electronics; CPU/ISA catalogs follow the same top-level reference convention when added;
 - the nested [`architecture-search/`](architecture-search/) area for the experimental planner, its evidence model, and end-to-end examples.
+
+The floating-point contract in [`floating-point/semantics.md`](floating-point/semantics.md) keeps F16/F32 value width separate from software/hardware arithmetic, Arm `soft`/`softfp`/hard calling convention, scalar/vector execution, and GPU precision. The same record is intended to drive the Idris/Idriç GLSL backend and its CPU/framebuffer oracles.
 
 The top-level catalogs are intentionally not being moved merely to make the tree look uniform. Several were requested as independently browsable references. The `architecture-search/` directory is the boundary for the planner experiment.
 
