@@ -10,9 +10,11 @@ Related notes:
 - [`architectural-compilation.md`](architectural-compilation.md)
 - [`stacks-moduli-deformation-and-mapping-class-groups.md`](stacks-moduli-deformation-and-mapping-class-groups.md)
 - [`albers-single-pixel-jacobian-stacky-boundary.md`](albers-single-pixel-jacobian-stacky-boundary.md)
+- [`the-silver-searcher-review.md`](the-silver-searcher-review.md)
+- [`../architecture-search/examples/search-workloads/`](../architecture-search/examples/search-workloads/)
 
 Concrete application plan:
-[`utilities-android-phone-user/search-text-messages`](https://github.com/isomorphisms/utilities-android-phone-user/tree/search-text-messages/messages/plans).
+[`utilities-android-phone-user/search-text-messages`](https://github.com/isomorphisms/utilities-android-phone-user/tree/search-text-messages/plans/search-text-messages).
 
 ## The compiler-design example
 
