@@ -20,7 +20,7 @@ Companion notes:
   attribution, prediction, and partial-order reporting.
 - [`backend-adoption-issue.md`](backend-adoption-issue.md) is the deliberately
   small issue copied into each CPU/compiler repository.
-- [`../../../../notes/the-silver-searcher-review.md`](../../../../notes/the-silver-searcher-review.md)
+- [`../../../notes/the-silver-searcher-review.md`](../../../notes/the-silver-searcher-review.md)
   reviews `ag` as a decomposable search system.
 
 ## The comparison object
@@ -103,4 +103,3 @@ profile supplies constraints or preferences.
 - using one histogram or elapsed-time scalar as a causal explanation;
 - requiring every backend to implement the suite before its native language
   and execution gates exist.
-
