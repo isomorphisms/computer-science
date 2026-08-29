@@ -1,5 +1,9 @@
 # ComputerScience
 
+## Rotations and reflections study
+
+The current [`_rotations-and-reflections/`](_rotations-and-reflections/) branch notebook collects the full discussion of Givens rotations, Householder reflections, products of reflections, Allen Hatcher's `SO(n)` construction, the `SO(n-1) -> SO(n) -> S^(n-1)` tower, cohomology and global factorization choices, and the associated numerical-linear-algebra / compiler-planning questions. Start with [`discussion-notes.md`](_rotations-and-reflections/discussion-notes.md).
+
 ComputerScience is an experimental architectural-planning project between semantic specification and concrete execution. It is intended to help choose and compose implementations using target facts, calculations, measurements, constraints, and programmer preferences, then leave behind an explicit plan that ordinary target-specific compilation can follow.
 
 This repository currently contains three related kinds of material:
