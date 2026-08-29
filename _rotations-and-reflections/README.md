@@ -14,7 +14,11 @@ optionally carry the same transform along to other values
 
 Do not assume in advance that Givens, Householder, two reflections, or another construction wins. The point is to keep the semantic goal visible while collecting enough mathematics and target evidence to choose later.
 
-## Notes
+## Start here
+
+- [`discussion-notes.md`](discussion-notes.md) — the full readable record of the discussion: Givens, Householder, products of reflections, the `SO(n-1) -> SO(n) -> S^(n-1)` tower, sphere parity, coherent versus individual factorizations, cohomology, projective-space / `2`-torsion intuition, compiler-planning implications, software, sources, and the copyright boundary.
+
+## Focused notes
 
 - [`numerical-linear-algebra.md`](numerical-linear-algebra.md) — compact Givens / Householder / two-reflection / direct-plane summary and the existing compiler-planning questions.
 - [`topology-and-cohomology.md`](topology-and-cohomology.md) — Allen Hatcher's reflection-built cell structure on `SO(n)`, the `SO(n-1) -> SO(n) -> S^(n-1)` viewpoint, and why cohomology may constrain coherent families of rotation/reflection plans without prescribing a finite sequence.
