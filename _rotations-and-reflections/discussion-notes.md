@@ -1,6 +1,8 @@
 # Rotations, reflections, and the topology of `SO(n)` — discussion notes
 
-This note records the full line of thought behind the current rotations/reflections branch so it can be read later as a mathematical and compiler-design discussion rather than reconstructed from chat history.
+This note records the line of thought behind the rotations/reflections study so it can be read later as a mathematical and compiler-design discussion rather than reconstructed from chat history.
+
+**Maintenance status:** this is a narrative synthesis. The focused notes linked from [`README.md`](README.md) are canonical for exact semantics, theorem scope, planner metadata, dependencies, sources, and redistribution boundaries. If this narrative and a focused note diverge, repair or defer to the focused note rather than treating both as independent authorities.
 
 ## 1. The starting intuition
 
@@ -113,15 +115,19 @@ That does not automatically make it faster. The answer depends on dimension, spa
 
 A reflection has determinant `-1`, so a product of two reflections has determinant `+1`.
 
-Therefore a semantic requirement for a proper rotation does **not** force a Givens chain. A reflection-based construction can still produce an element of `SO(n)`.
+Therefore a semantic requirement for a proper transform does **not** force a Givens chain. For the underdetermined vector-alignment request in dimension at least two, a reflection-based construction can be paired with a second reflection fixing the target axis.
+
+This does not say that an arbitrary prescribed element of `SO(n)` is a product of only two reflections. Its exact minimum can be larger.
 
 This elementary determinant fact is exactly the bridge between “reflection” and “rotation” that keeps reappearing in the topology.
 
 ### Direct rotation in the data-defined 2-plane
 
-If the only requirement is to move one distinguished direction to `e1`, the necessary geometric action occurs in the 2-plane spanned by that direction and `e1`. The orthogonal complement can be left fixed.
+If the only requirement is to move one nonzero direction to `e1`, and that direction is neither parallel nor antiparallel to `e1`, the necessary geometric action occurs in the 2-plane spanned by the two directions. The orthogonal complement can be left fixed.
 
-This gives another proper-rotation construction and should remain visible as a candidate instead of artificially forcing either a long coordinate-plane sequence or a reflector.
+The parallel case is the identity. In the antiparallel case the span collapses to one line, so a proper rotation in dimension at least two needs an additional chosen perpendicular direction. The zero vector has no direction; this study uses a tagged identity/no-op convention. These cases are specified in [`numerical-linear-algebra.md`](numerical-linear-algebra.md).
+
+A direct-plane representation and a two-reflection representation can describe the same simple rotation. They are computational representations to compare, not automatically distinct mathematical families.
 
 ## 3. Hatcher's construction is unexpectedly close to the same idea
 
@@ -157,9 +163,9 @@ Hatcher then multiplies these elementary rotations to obtain a cellular map
 RP^(n-1) x RP^(n-2) x ... x RP^1 -> SO(n),
 ```
 
-and uses this to construct a CW structure on `SO(n)`.
+and uses the resulting products as characteristic-map machinery for a CW decomposition of `SO(n)`.
 
-This is a very concrete reason to keep projective geometry, reflections, and numerical factorizations in one notebook. The topology of the rotation group is being assembled using products of reflections.
+This is a very concrete reason to keep projective geometry, reflections, and numerical factorizations in one study. The topology of the rotation group is being assembled using products of reflections.
 
 ## 4. The `SO(n-1) -> SO(n) -> S^(n-1)` tower
 
@@ -169,6 +175,8 @@ A second striking point is the standard evaluation map
 p : SO(n) -> S^(n-1)
 p(A) = A en.
 ```
+
+Hatcher defines `rho(v)` using `e1` but evaluates at `en`. This is consistent because `r(e1)` fixes `en`.
 
 The fiber consists of rotations that fix `en`, which is naturally `SO(n-1)`. So we have the bundle
 
@@ -183,7 +191,7 @@ choose where one basis vector goes
 then solve the remaining lower-dimensional rotation problem
 ```
 
-Hatcher makes this explicit in the cell construction. Given a rotation `beta`, choose an elementary two-reflection rotation `rho(v_beta)` sending `en` to `beta en`. Then
+Hatcher makes this explicit in the cell construction. If `beta` already fixes `en`, it lies in the `SO(n-1)` fiber. Otherwise, the cell parametrization supplies the relevant `v_beta`, and the elementary two-reflection rotation `rho(v_beta)` sends `en` to `beta en`. Then
 
 ```text
 alpha_beta = rho(v_beta)^(-1) beta
@@ -211,7 +219,7 @@ recurse on the orthogonal complement
 
 The analogy is not superficial. The recursive reduction in dimension is built into the topology of the group.
 
-## 5. Why the sphere parity intuition is not crazy
+## 5. What sphere parity does and does not say
 
 Even- and odd-dimensional spheres are globally different in ways that can affect the existence of continuous choices.
 
@@ -222,7 +230,7 @@ chi(S^(2k))   = 2
 chi(S^(2k+1)) = 0.
 ```
 
-This difference is connected with global tangent-field behavior and related section/trivialization questions.
+The nonzero Euler characteristic of an even-dimensional sphere rules out a nowhere-zero tangent field. Odd-dimensional spheres do admit at least one such field.
 
 So when the rotation group is viewed through the tower
 
@@ -230,7 +238,9 @@ So when the rotation group is viewed through the tower
 SO(n-1) -> SO(n) -> S^(n-1),
 ```
 
-it is reasonable to suspect that the parity and topology of the sphere appearing at each stage can affect whether a globally uniform choice of “next direction”, “next frame”, or “next decomposition” exists.
+it is reasonable to ask whether the topology of the sphere at each stage obstructs the exact continuous choice a planner wants.
+
+But one nonvanishing tangent field is much weaker than a full frame. Vanishing Euler characteristic does not trivialize the bundle. The product/trivial cases occur at `n = 2, 4, 8`, corresponding to the parallelizable spheres `S^1`, `S^3`, and `S^7`; Hatcher describes the other cases as twisted products.
 
 This does **not** mean:
 
@@ -240,11 +250,11 @@ sphere parity -> choose Householder on odd n
 
 or any other direct compiler heuristic.
 
-It means the planner should distinguish local existence of a factorization from global continuity/coherence of a *rule for choosing* that factorization.
+It means the planner should distinguish local existence of a factorization from global continuity/coherence of a *rule for choosing* that factorization, and should record the exact dimension and theorem rather than only a parity bit.
 
 ## 6. The key distinction: individual factorization versus coherent family
 
-For an individual orthogonal matrix, factorization results are abundant. By Cartan–Dieudonne, every orthogonal transformation is a product of reflections.
+For an individual orthogonal matrix, factorization results are abundant. By Cartan–Dieudonne, every orthogonal transformation is a product of reflections. The exact Euclidean minimum is `rank(I - Q) = codim Fix(Q)`, so even a proper matrix may need more than two reflections.
 
 So the question
 
@@ -270,6 +280,8 @@ A -> (R1(A), R2(A), ..., Rk(A))
 ```
 
 with the `Ri(A)` chosen from some preferred family of elementary transformations.
+
+The `SO(n-1)` bundle constrains such a rule only when the proposed choice would actually induce a section or full frame of that bundle. A different factorization parameter space needs its own map and theorem; nontriviality cannot be transferred by analogy alone.
 
 If the relevant bundle is nontrivial, no single global continuous choice may exist. Any practical implementation may then need one or more of:
 
@@ -357,7 +369,7 @@ If not, it remains mathematically interesting background rather than compiler in
 
 ## 10. What the Computer Science planner should preserve
 
-The high-level program should express the semantic operation rather than prematurely name the implementation.
+The high-level program should express the semantic operation rather than prematurely name the implementation. It must also state the operation's domain and degenerate behavior.
 
 For example:
 
@@ -366,6 +378,8 @@ align this distinguished direction with e1
 preserve norm
 require / do not require determinant +1
 apply / do not apply the same transform to accompanying values
+if the vector is zero, return zero with an identity/no-op transform and a zero-direction status
+if it is antiparallel to e1, record how the additional rotation-plane direction is chosen
 ```
 
 The planner should then ask, in order:
@@ -408,7 +422,7 @@ Do not assume values for these in advance. Measure or prove which are predictive
 
 ## 12. Relationship to existing Computer Science issues
 
-This branch consolidates and extends several standing notes.
+This study consolidates and extends several standing notes.
 
 ### #51 — Givens conformance kernel
 
@@ -422,7 +436,7 @@ Keep Householder, products of reflections, Givens, direct-plane rotations, and l
 
 Insert a symbolic/mathematical planning stage before committing to branches, vectors, instructions, registers, or shader fragments.
 
-This rotations/reflections branch is a concrete test case for that principle.
+This rotations/reflections study is a concrete test case for that principle.
 
 ## 13. Macaulay2 and cohomology software
 
@@ -441,67 +455,22 @@ Debian also packages **cohomCalg**. Its domain is sheaf cohomology of line bundl
 
 The useful architectural example is that Macaulay2 can act as an interface to a specialized cohomology engine. That is an interesting model for a planner consuming symbolic answers with explicit provenance.
 
-## 14. Copyright / figure boundary
+## 14. Sources and redistribution boundary
 
-Hatcher's *Algebraic Topology* is freely downloadable, but the electronic edition's notice permits single paper/electronic copies for noncommercial personal use and reserves other rights.
+[`software-and-sources.md`](software-and-sources.md) is the canonical bibliography, attribution, and reuse note. In summary, this repository links to the Hatcher and Agosto/Perez material, credits its creators, and does not store their PDFs or figures. Keeping the detailed boundary in one file avoids contradictory licensing summaries.
 
-That is not sufficient permission to copy the entire book, pages, or figures into this public GitHub repository.
+## 15. Focused references
 
-Likewise, no separate redistribution license was found on Hatcher's `SO(n)` diagram page or combined Agosto/Perez/Hatcher diagram PDF.
-
-Therefore this repository:
-
-- links directly to the original PDFs and pages;
-- credits Allen Hatcher, M. A. Agosto, and J. J. Perez explicitly;
-- summarizes the mathematical content in original prose;
-- does **not** copy the figures or PDFs into the repository without further permission.
-
-If explicit permission or a compatible license is later obtained, the original figures can be added with full source/credit metadata.
-
-## 15. Primary references
-
-### Topology / cohomology
-
-Allen Hatcher, *Algebraic Topology*, Section 3D:
-
-https://pi.math.cornell.edu/~hatcher/AT/ATch3.4.pdf
-
-Hatcher's `SO(n)` cohomology page:
-
-https://pi.math.cornell.edu/~hatcher/SO/SO.html
-
-Agosto/Perez diagrams with Hatcher commentary:
-
-https://pi.math.cornell.edu/~hatcher/SO/SO%28n%29.pdf
-
-### Numerical linear algebra
-
-Lloyd N. Trefethen and David Bau III, *Numerical Linear Algebra*:
-
-https://people.maths.ox.ac.uk/trefethen/text.html
-
-### Computer algebra / cohomology software
-
-Macaulay2:
-
-https://macaulay2.com/
-
-Debian Macaulay2 package:
-
-https://packages.debian.org/trixie/macaulay2
-
-Debian cohomCalg package:
-
-https://packages.debian.org/trixie/cohomcalg
-
-Macaulay2 CohomCalg interface:
-
-https://macaulay2.com/doc/Macaulay2/share/doc/Macaulay2/CohomCalg/html/index.html
+- Pointwise alignment semantics and numerical choices: [`numerical-linear-algebra.md`](numerical-linear-algebra.md)
+- Topology and exact dimension scope: [`topology-and-cohomology.md`](topology-and-cohomology.md)
+- Exact and derived planner facts: [`cheap-invariants-and-parity.md`](cheap-invariants-and-parity.md)
+- Dependency and parallel-execution distinctions: [`parallelism-from-factorizations.md`](parallelism-from-factorizations.md)
+- Full bibliography and source boundary: [`software-and-sources.md`](software-and-sources.md)
 
 ## 16. The working research question
 
 The most useful compact statement of the whole thread is:
 
-> Cohomology of `SO(n)` probably does not encode “perform rotation 7, then rotation 3.” It can, however, encode global obstructions and equivalences governing whether families of reflection/rotation decompositions can be chosen continuously, uniquely, or globally. Those obstructions may show up computationally as unavoidable sign choices, singular cases, branch cuts, or multiple planning charts.
+> Cohomology of `SO(n)` does not directly encode “perform rotation 7, then rotation 3.” Cohomological and obstruction-theoretic data can, however, help detect whether families of reflection/rotation decompositions can be chosen continuously or globally. Such obstructions may show up computationally as unavoidable sign choices, singular cases, branch cuts, or multiple planning charts.
 
 That is enough to justify keeping the topology next to the numerical-linear-algebra planner without pretending that every cohomology class has an immediate machine-code interpretation.

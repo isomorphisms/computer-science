@@ -1,8 +1,10 @@
 # Existing project connections
 
-## Mathematical keyboard: semidirect / twisted-product vocabulary
+## Mathematical keyboard: intended semidirect / twisted-product vocabulary
 
-The keyboard design checkpoint already assigns **semidirect product** to the same physical control as Cartesian/multiplicative `×`. The remaining presentation choice was the orientation/glyph (`⋊` versus `⋉`), not whether semidirect-product notation belonged on the board.
+The keyboard design discussion intends **semidirect product** to share the physical neighborhood or control family of Cartesian/multiplicative `×`, with the orientation/glyph (`⋊` versus `⋉`) still to be settled.
+
+At inspected revision [`b52ffb3`](https://github.com/isomorphisms/programmers-keyboard/commit/b52ffb3dc9979990867d7c12b19603d04a8855dd), the `isomorphisms/programmers-keyboard` tree does not contain a textual `semidirect`, `twisted product`, `⋊`, or `⋉` mapping. Therefore this is a design requirement to preserve, not an implemented keyboard fact. The keyboard repository must be updated separately before another project treats the mapping as available.
 
 That vocabulary is directly relevant to the present `SO(n)` discussion. When a space is a twisted bundle rather than a global direct product, the planner and explanatory UI should have concise notation available for “there is product-like structure here, but not a naive globally independent product.”
 
@@ -51,26 +53,40 @@ compiler/backend
     lower the selected plan to concrete operations and measure it
 ```
 
-An LLM advisory layer can sit in the middle and connect facts that have not yet been formalized into one common executable language.
+An LLM advisory layer can sit in the middle and propose connections among facts that have not yet been formalized into one common executable language. Deterministic checks remain responsible for dependency and correctness claims.
 
 For example:
 
 ```text
 Cayley / theorem / reference:
-  these factors commute or act on independent subspaces
+  these factors commute
 
 planner consequence:
-  expose them as one parallel layer
+  permit a reorder, then check whether it improves the plan
 
 backend question:
-  does that layer map well to this CPU/GPU target?
+  which valid order maps best to this CPU/GPU target?
+```
+
+Or, with stronger information:
+
+```text
+Cayley / theorem / reference:
+  the state and factors split into independent orthogonal blocks
+
+planner consequence:
+  expose the blocks as possible concurrent work
+
+backend question:
+  does block-parallel execution beat sequential application here?
 ```
 
 Or:
 
 ```text
 topology/reference:
-  no global product/trivialization should be assumed
+  this candidate would induce a section of the stated bundle,
+  and the dimension-scoped theorem rules out such a global section
 
 planner consequence:
   retain multiple local cases/charts instead of forcing one smooth global rule

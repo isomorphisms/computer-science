@@ -1,6 +1,6 @@
 # Rotations and reflections
 
-This branch collects the mathematical and numerical-linear-algebra material behind high-dimensional alignment, reflection/rotation factorizations, and the question of what can be decided before lowering a transform to branches, vectors, instructions, or shaders.
+This directory collects the mathematical and numerical-linear-algebra material behind high-dimensional alignment, reflection/rotation factorizations, and the question of what can be decided before lowering a transform to branches, vectors, instructions, or shaders.
 
 The motivating semantic operation is deliberately algorithm-neutral:
 
@@ -14,18 +14,28 @@ optionally carry the same transform along to other values
 
 Do not assume in advance that Givens, Householder, two reflections, or another construction wins. The point is to keep the semantic goal visible while collecting enough mathematics and target evidence to choose later.
 
+The request above is not yet a fully specified matrix. Keep three levels distinct:
+
+1. a **pointwise alignment request**, which leaves many correct transforms available;
+2. a **specified orthogonal transform** `Q`, whose determinant, fixed subspace, and exact reflection length are properties of that particular `Q`;
+3. a **family of choices** varying over a parameter space, where continuity, charts, bundle sections, and topological obstructions become relevant.
+
+Facts valid at one level must not be silently promoted to another. In particular, two reflections suffice for the underdetermined proper-alignment request in dimension at least two, but not for every prescribed element of `SO(n)`.
+
+The alignment contract must also retain its degenerate cases: `d = 0` has no direction, and a direction antiparallel to `e1` does not determine its own rotation plane. [`numerical-linear-algebra.md`](numerical-linear-algebra.md) records the explicit conventions.
+
 ## Start here
 
-- [`discussion-notes.md`](discussion-notes.md) — the full readable record of the discussion: Givens, Householder, products of reflections, the `SO(n-1) -> SO(n) -> S^(n-1)` tower, sphere parity, coherent versus individual factorizations, cohomology, projective-space / `2`-torsion intuition, compiler-planning implications, software, sources, and the copyright boundary.
+- [`discussion-notes.md`](discussion-notes.md) — the readable narrative record of the discussion. It preserves the line of thought, but the focused notes below are canonical when precise claims or maintenance details differ.
 
 ## Focused notes
 
 - [`numerical-linear-algebra.md`](numerical-linear-algebra.md) — compact Givens / Householder / two-reflection / direct-plane summary and the existing compiler-planning questions.
 - [`topology-and-cohomology.md`](topology-and-cohomology.md) — Allen Hatcher's reflection-built cell structure on `SO(n)`, the `SO(n-1) -> SO(n) -> S^(n-1)` viewpoint, and why cohomology may constrain coherent families of rotation/reflection plans without prescribing a finite sequence.
-- [`cheap-invariants-and-parity.md`](cheap-invariants-and-parity.md) — make `n mod 2`, determinant/orientation, reflection-count parity, and known fixed-subspace/reflection-length facts cheap cached planner metadata; distinguishes even/odd dimension from even/odd reflection parity.
+- [`cheap-invariants-and-parity.md`](cheap-invariants-and-parity.md) — separate request, selected-transform, and family facts; keep one canonical field for equivalent invariants; derive parity; and justify the exact reflection-length formula.
 - [`llm-mathematical-advisor.md`](llm-mathematical-advisor.md) — use an LLM as an advisory/orchestration layer over heterogeneous mathematical, symbolic, numerical, hardware, and empirical evidence without pretending every fact already has a compiler opcode.
-- [`parallelism-from-factorizations.md`](parallelism-from-factorizations.md) — use Cartan-Dieudonne/reflection factorizations as dependency structure: internal reflector parallelism, batches, commuting/disjoint factors, block structure, and tree composition where appropriate.
-- [`existing-project-connections.md`](existing-project-connections.md) — connects the semidirect-product keyboard control and the existing `isomorphismes/Cayley` mathematical toy-box project to this planning architecture.
+- [`parallelism-from-factorizations.md`](parallelism-from-factorizations.md) — distinguish reordering permitted by commutation from concurrency justified by independent blocks, while also recording batch, reduction, and tree-composition opportunities.
+- [`existing-project-connections.md`](existing-project-connections.md) — connects the planned semidirect/twisted-product keyboard vocabulary and the existing `isomorphismes/Cayley` mathematical toy-box project to this planning architecture without claiming the keyboard mapping is already implemented.
 - [`software-and-sources.md`](software-and-sources.md) — distinguishes Hatcher's textbook from the separate two-page `SO(n)` handout and ten-page Agosto/Perez/Hatcher diagram collection; also records Trefethen & Bau, Macaulay2, Debian `cohomcalg`, direct source links, and reuse/licensing notes.
 
 ## Existing Computer Science threads
@@ -35,10 +45,6 @@ Do not assume in advance that Givens, Householder, two reflections, or another c
 - [#54 — ask mathematics before registers](https://github.com/walnut-burgundy/computer-science/issues/54)
 - [Coxeter #5 — Householder reflections for high-dimensional alignment](https://github.com/isomorphismes/coxeter/issues/5)
 
-## Copyright boundary for Hatcher material
+## Source and redistribution boundary
 
-The public electronic edition of Allen Hatcher's *Algebraic Topology* is free to download, but its copyright notice says that single paper/electronic copies may be made for noncommercial personal use and that all other rights are reserved. That is not a license to vendor the book, its pages, or its figures into this public repository.
-
-The **separate** Hatcher `SO(n)` material is not just a book excerpt: Hatcher hosts a short explanatory handout plus a collection of computer-generated diagrams. The combined PDF credits the pictures to **M. A. Agosto and J. J. Perez** and the commentary to **Allen Hatcher**. I found no separate redistribution license on that page or those PDFs, so this branch links directly to the originals rather than copying/rehosting them.
-
-If explicit redistribution permission is obtained later, direct figures can be added with their original credits and source metadata. Until then, the source note links straight to the one-page and ten-page diagram PDFs so the pictures remain immediately accessible.
+No Hatcher book pages, Agosto/Perez diagrams, or source PDFs are stored here. [`software-and-sources.md`](software-and-sources.md) is the canonical source and reuse note; the other files link to it instead of maintaining competing licensing summaries.

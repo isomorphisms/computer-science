@@ -2,7 +2,7 @@
 
 ## Rotations and reflections study
 
-The current [`_rotations-and-reflections/`](_rotations-and-reflections/) branch notebook collects the full discussion of Givens rotations, Householder reflections, products of reflections, Allen Hatcher's `SO(n)` construction, the `SO(n-1) -> SO(n) -> S^(n-1)` tower, cohomology and global factorization choices, and the associated numerical-linear-algebra / compiler-planning questions. Start with [`discussion-notes.md`](_rotations-and-reflections/discussion-notes.md).
+The [`_rotations-and-reflections/`](_rotations-and-reflections/) study collects the discussion of Givens rotations, Householder reflections, products of reflections, Allen Hatcher's `SO(n)` construction, the `SO(n-1) -> SO(n) -> S^(n-1)` tower, cohomology and global factorization choices, and the associated numerical-linear-algebra / compiler-planning questions. Start with its [`README.md`](_rotations-and-reflections/README.md); the focused notes are the maintained technical references and [`discussion-notes.md`](_rotations-and-reflections/discussion-notes.md) is the narrative record.
 
 ComputerScience is an experimental architectural-planning project between semantic specification and concrete execution. It is intended to help choose and compose implementations using target facts, calculations, measurements, constraints, and programmer preferences, then leave behind an explicit plan that ordinary target-specific compilation can follow.
 
@@ -18,7 +18,7 @@ The top-level catalogs are intentionally not being moved merely to make the tree
 
 The repository is currently in the design, cataloging, and evidence-gathering stage. The architecture-search planner remains prose/design work. The one intentional executable exception is `gpu-renderer-contract/`: a dependency-free test lab for host/GPU boundary invariants learned from real renderers and compiler backends. It is not an executable component schema, observation store, SURFER selection trace, planner, constraint solver, autotuner, or ComputerScience compiler. Catalog entries and proposed directory structure do not count as implementations.
 
-Relevant implementations exist in neighboring repositories: the [Idriç compiler](https://github.com/isomorphisms/Idric), the [Idris-to-GLSL ES backend](https://github.com/isomorphisms/idris-shader-backend), and the existing [CPU-only Java SURFER app](https://github.com/isomorphisms/algebraic-variety-explorer-mobile). They are implementation evidence and possible lowering machinery, not an implemented ComputerScience planner.
+Relevant implementations exist in neighboring repositories: the [Idriç compiler](https://github.com/isomorphisms/Idric), the [Idris-to-GLSL ES backend](https://github.com/isomorphisms/idris-shader-backend), and the existing [CPU-only Java SURFER app](https://github.com/isomorphismes/algebraic-variety-explorer-mobile). They are implementation evidence and possible lowering machinery, not an implemented ComputerScience planner.
 
 The first intended vertical slice is SURFER. IB/eyebrowser is the committed second slice and will be developed on a separate branch so it can test process composition, renderer choice, data movement, and resource policy without diluting the SURFER lowering trace. Field Mouse remains a possible later trial until its interface and acceptance criteria are specified.
 

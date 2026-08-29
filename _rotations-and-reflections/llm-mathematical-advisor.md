@@ -1,158 +1,187 @@
 # LLM mathematical advisory layer
 
-The rotations/reflections discussion gives a concrete use for the Computer Science planner that is broader than selecting among already-named numerical routines.
+The rotations/reflections study gives the Computer Science planner a use for an LLM broader than selecting among already-named numerical routines: connect heterogeneous, explicitly scoped evidence before a concrete algorithm is chosen.
 
-The planner should be able to ingest **heterogeneous information whose computational role is not yet specified** and let an LLM use it as advisory evidence before a concrete algorithm is chosen.
+The LLM is an advisor and proposal generator. It is not the component authorized to convert an unverified claim into a hard constraint or delete a correct candidate.
 
-That includes facts such as:
+## Separate the objects under discussion
 
-- `SO(n-1) -> SO(n) -> S^(n-1)` is generally a twisted bundle rather than a global direct product;
-- a proposed family of decompositions may fail to admit one globally continuous choice;
-- reflection choices are naturally projective (`v ~ -v`);
-- determinant `+1` is a semantic constraint, not an implementation name;
-- numerical-linear-algebra facts about Givens, Householder, direct 2-plane rotations, stability, sparsity, and reuse;
-- target facts such as divergence, dependency depth, register pressure, memory traffic, precision, and compile time;
-- user-supplied preferences or mathematical observations that have not yet been converted into a formal compiler rule.
-
-The system does **not** need to know in advance how every such fact will lower to code. It needs to preserve the fact, provenance, confidence, and scope so that a planner can consult it later.
-
-## Proposed planning shape
+Every advisory pass must first identify which level a claim concerns:
 
 ```text
-semantic request
-  -> evidence ledger
-       mathematical facts / theorems
-       symbolic/CAS results
-       numerical-linear-algebra knowledge
-       hardware / ABI facts
-       measured benchmark evidence
-       user constraints/preferences
-       unresolved hypotheses
-  -> LLM advisory / orchestration pass
-       identify relevant global constraints
-       propose candidate algorithm families
-       rule out incompatible choices
-       identify missing information
-       suggest local charts / case splits when global uniformity is suspect
-  -> deterministic checks / mathematical oracles where available
-  -> target-aware algorithm selection
-  -> IR / branches / vector operations / shaders / instructions
-  -> execution evidence
-  -> feed results back into the ledger
+pointwise request
+    choose some Q satisfying an alignment contract
+
+specified transform
+    analyze or factor this particular Q
+
+family of choices
+    choose Q(p) as p varies over a stated parameter domain
 ```
 
-The LLM is not the source of truth. It is the component that can **connect facts that do not yet share a common executable representation**.
+Examples of scope errors to reject:
 
-## Why this is useful now
+- “two reflections suffice for this proper alignment request” does not imply that every prescribed `Q in SO(n)` has reflection length two;
+- “this bundle has no global section” does not prevent choosing a transform for one input;
+- “these factors commute” permits reordering but does not prove same-input parallel independence;
+- “the sphere has Euler characteristic zero” does not supply a full global frame.
 
-Current language models are already capable of reading a statement such as
+## Evidence ledger
 
-```text
-SO(n) is not globally S^(n-1) x SO(n-1)
-```
+The planner should preserve heterogeneous inputs whose eventual computational role may still be unknown:
 
-and drawing a useful planning consequence without needing a bespoke `twisted_bundle` optimization pass:
+- mathematical theorems and their hypotheses;
+- symbolic/CAS results;
+- numerical-linear-algebra knowledge;
+- hardware and ABI facts;
+- measured benchmark evidence;
+- semantic requirements and user preferences;
+- unresolved hypotheses and LLM suggestions.
 
-```text
-do not assume one globally smooth coordinate/factorization rule;
-expect multiple charts, sign choices, singular/degenerate cases,
-or a local construction whose domain is explicit.
-```
-
-That consequence is not yet a machine-code algorithm. It is still valuable because it can prevent the planner from imposing a mathematically impossible global regularity requirement.
-
-Similarly, an LLM can combine:
-
-```text
-input vectors are sparse
-+ only one aligned result is needed
-+ determinant -1 is allowed
-+ target has expensive divergent control flow
-```
-
-with numerical-linear-algebra knowledge and propose that a Householder/reflection family deserves comparison before a long data-dependent Givens chain.
-
-The proposal must still be checked and measured. The useful capability is **cross-domain synthesis before formal lowering**.
-
-## Ensemble rather than one opaque verdict
-
-The planner can treat the LLM layer as an ensemble of advisory roles even if one underlying model performs several passes:
-
-- **mathematics advisor** — topology, group structure, algebraic constraints, exact invariants;
-- **numerical-linear-algebra advisor** — stable/correct algorithm families and known tradeoffs;
-- **target advisor** — CPU/GPU/ISA/shader consequences;
-- **critic** — search for hidden assumptions, especially accidental global-continuity or data-shape assumptions;
-- **planner/judge** — synthesize candidate plans and state what evidence would discriminate among them.
-
-These roles should return structured claims rather than authority:
+Each entry needs its own status and provenance:
 
 ```text
 claim
-source / provenance
-scope
-confidence
-hard constraint | measured fact | theorem | heuristic | suggestion
-what decision it affects
-what would falsify it
+object_scope: request | input | transform | family | target | measurement
+parameter/dimension scope
+source / derivation / provenance
+verification status
+theorem | semantic requirement | measured fact | heuristic | suggestion
+what decision it could affect
+what would falsify or supersede it
 ```
 
-A theorem and an LLM hunch must never enter the ledger with the same status.
+A theorem, a measurement, a user preference, and an LLM hunch must never enter the ledger with the same status.
 
-## Global constraints as advisory objects
-
-We do not need a complete formal language for global topology before using it.
-
-A first representation can be deliberately loose but typed enough to avoid confusion:
+## Planning shape
 
 ```text
-GlobalConstraint:
-  statement: "no single global trivialization assumed"
-  domain: SO(n)
-  source: Hatcher Section 3D / bundle structure
-  status: mathematical fact
-  planning_effect:
-    - permit local charts / case splits
-    - reject plans requiring one globally continuous parameterization unless proved
+semantic request
+  -> scoped evidence ledger
+  -> LLM advisory pass
+       identify possibly relevant constraints
+       propose candidate transforms/representations
+       flag apparent incompatibilities for checking
+       identify missing information
+       suggest explicit local charts or case splits
+  -> deterministic checks / mathematical oracles
+       confirm hard constraints
+       reject only checked incompatibilities
+  -> target-aware selection and measurement
+  -> IR / branches / vectors / shaders / instructions
+  -> execution evidence returned to the ledger
 ```
 
-Another example:
+The ordering matters. The LLM may notice a possible contradiction; the deterministic stage decides whether its hypotheses actually match and whether pruning is justified.
+
+## A correctly scoped topology object
+
+Hatcher's Section 3D gives the bundle
 
 ```text
-SemanticConstraint:
-  statement: "proper rotation required"
-  formal: det(Q) = +1
-  planning_effect:
-    - reject a single reflection as final transform
-    - retain two-reflection and Givens/direct-rotation families
+SO(n-1) -> SO(n) -> S^(n-1).
 ```
 
-The first version can remain prose-plus-structured metadata. Formalization can be added only where it buys verification or automatic pruning.
+The precise planning input is dimension-scoped:
+
+```text
+FamilyConstraint:
+    family: sections of SO(n) -> S^(n-1)
+    dimension: n >= 2
+    continuity_requirement: global
+    statement:
+        product/trivial cases at n = 2, 4, 8;
+        twisted in the other cases
+    source: Hatcher, Algebraic Topology, Section 3D
+    status: cited mathematical statement
+```
+
+The planning consequence is conditional:
+
+```text
+if a candidate actually requires such a global section
+and n is outside the exceptional cases,
+then require multiple charts, a restricted domain,
+redundancy, or an explicit discontinuity.
+```
+
+It is incorrect to store the blanket sentence “`SO(n)` is never globally a product,” and it is also incorrect to apply this family-level fact to a pointwise kernel that requests no continuous family.
+
+## A correctly scoped semantic object
+
+For the underdetermined alignment request:
+
+```text
+AlignmentConstraint:
+    statement: proper transform required
+    formal: det(Q) = +1
+    scope: choose some Q satisfying Qd = ||d||e1
+```
+
+A deterministic consequence is that a single hyperplane reflection cannot be the final transform. In dimension at least two, two-reflection, direct-plane, and Givens representations remain possible, subject to the zero and antiparallel cases.
+
+For an already prescribed proper `Q`, the conclusion changes: the exact minimum is `rank(I - Q)`, which is even. A nonidentity transform has minimal reflection length two exactly when that rank is two. The identity has minimal length zero, although redundant reflection pairs can of course represent it.
+
+## Advisory synthesis that remains a proposal
+
+An LLM can combine
+
+```text
+input vectors are sparse
+only one aligned result is needed
+determinant -1 is permitted
+target penalizes divergent control flow
+```
+
+and propose comparing a Householder/reflection representation before a long data-dependent Givens chain.
+
+That proposal is useful because it connects numerical and target information. It still needs:
+
+- a correct zero/degeneracy path;
+- a checked transform oracle;
+- a numerical error policy;
+- actual measurements on the target.
+
+## Advisory roles
+
+One model can perform several explicit passes:
+
+- **mathematics advisor** — surface potentially relevant topology, group structure, and exact invariants;
+- **numerical-linear-algebra advisor** — propose stable algorithm families and known tradeoffs;
+- **target advisor** — connect candidates to CPU/GPU/ISA/shader facts;
+- **critic** — search for scope changes, hidden continuity assumptions, degenerate cases, and false independence;
+- **planner/judge** — produce a shortlist and the checks or measurements needed to discriminate among it.
+
+None of these role labels confers authority. Their output remains structured claims for validation.
 
 ## Relationship to Cayley / the mathematical toy box
 
-Cayley-style group exploration belongs naturally on the mathematics side of this architecture. Small concrete group actions, Cayley graphs, reflection groups, and toy examples can act as an experimental playground for asking:
+Cayley-style exploration can provide small examples of generators, relations, equivalent words, commuting factors, and independent block actions. Those facts must retain their exact computational meaning:
 
-- what does a generator/factorization choice look like concretely?
-- which relations collapse apparently different sequences?
-- how do local moves compose globally?
-- what information is worth passing from a mathematical explorer into the planner?
+- a relation may shorten a word;
+- commutation may permit reordering;
+- a verified orthogonal block decomposition may permit concurrent execution;
+- none of these follows automatically from the others.
 
-The planner should consume those results as evidence or reusable structural facts rather than require every mathematical toy to become production compiler code.
+The planner should consume such results as inspectable evidence rather than require every mathematical toy to become production compiler code.
 
 ## Keyboard notation
 
-If a twisted-product / semidirect-product symbol is already present on the mathematical keyboard, it is especially appropriate vocabulary for these notes. The current GitHub code search available here did not locate a textual `twisted product` / `semidirect` entry in `isomorphisms/programmers-keyboard`, so this specific keyboard mapping should be verified separately rather than asserted from memory.
+The intended keyboard design includes semidirect/twisted-product vocabulary near multiplicative `×`. [`existing-project-connections.md`](existing-project-connections.md) records the exact keyboard revision inspected and the absence of such a mapping there. Preserve the intention as a pending keyboard requirement; do not report the control as implemented without checking a newer revision.
+
+A twisted bundle must not be described as a semidirect product merely because the keyboard offers related vocabulary.
 
 ## Immediate research rule
 
-For rotations/reflections, the planner should now ask before choosing an implementation:
+Before choosing an implementation, ask:
 
-1. Is the request local (one matrix/vector) or a coherent family over a domain?
-2. Does the proposed algorithm silently require a global continuous choice?
-3. What topology/group structure constrains that choice?
-4. What numerical algorithm families remain after hard semantic constraints?
-5. Which workload/target facts discriminate among them?
-6. Can an LLM synthesize the currently heterogeneous evidence into a testable shortlist?
-7. Which parts of that shortlist can be checked deterministically before execution?
+1. Is this an underdetermined request, a prescribed transform, or a family?
+2. What is the exact input domain, including zero and degenerate cases?
+3. Does any candidate require a continuous local or global choice?
+4. Which theorem applies to that exact object and dimension?
+5. What deterministic consequences follow?
+6. Which algorithm/representation families survive those checks?
+7. Which workload and target facts discriminate among them?
+8. What can be measured or checked before execution?
 
-This is a legitimate present-day use of an LLM: not replacing proof or benchmarking, but **orchestrating incompletely formalized mathematical, numerical, empirical, and architectural information into explicit candidate plans whose assumptions remain inspectable**.
+This is a legitimate present-day use of an LLM: orchestrate incompletely unified mathematical, numerical, empirical, and architectural information into explicit candidate plans while leaving correctness and hard pruning to checkable evidence.

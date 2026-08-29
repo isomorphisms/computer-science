@@ -1,49 +1,83 @@
-# Cheap invariants and parity for local planning
+# Exact local facts, derived invariants, and family constraints
 
-There are several very cheap facts a local optimizer can know before choosing a concrete rotation/reflection algorithm. They should be kept distinct because they answer different questions.
+This is the canonical note for planner metadata. Its first rule is to keep three scopes separate:
 
-## 1. Ambient dimension parity: `n mod 2`
+1. **request facts** describe what transform is allowed to be chosen;
+2. **transform facts** describe an already selected or prescribed `Q`;
+3. **family facts** describe choices varying over a parameter space.
 
-The parity of the dimension is essentially free metadata.
+Mixing these scopes creates false deductions. A proper alignment request may admit a two-reflection solution even though a prescribed proper matrix can require many reflections, and a topological obstruction to one continuous family says nothing against factoring one matrix pointwise.
 
-```text
-n_even = (n & 1) == 0
-```
+## 1. Request facts and observed input facts
 
-This can be known statically whenever the dimension is part of the type/shape, or cached once when dimension is dynamic but reused.
-
-The distinction is mathematically real. Hatcher's summary of the torsion-free integral cohomology has different forms for
+For the alignment operation, record semantic constraints rather than an algorithm name:
 
 ```text
-n = 2k + 1
+AlignmentRequest:
+    dimension: n
+    orientation_requirement: any | proper
+    carry_transform_to_other_values: yes | no
+    continuity_requirement: pointwise | local_family | global_family
+
+AlignmentInputFacts:
+    input_case:
+        exact(zero | parallel | antiparallel | generic, provenance)
+        | classified_within_tolerance(case, tolerance_policy, provenance)
+        | unknown
+    known_at: planning_time | runtime
 ```
 
-and
+The request describes required semantics; the input record describes the value being processed. Keeping them separate prevents a runtime observation such as `zero` from being mistaken for a property of every invocation of the operation. A floating-point “near zero” or “nearly parallel” classification is not silently promoted to an exact mathematical fact; its tolerance policy travels with it. The zero and antiparallel cases have explicit semantics in [`numerical-linear-algebra.md`](numerical-linear-algebra.md).
+
+Neither record claims that a particular `Q` already exists or has been selected.
+
+## 2. Canonical transform facts and derived views
+
+For an orthogonal transform `Q`, one canonical partial record is enough:
 
 ```text
-n = 2k + 2.
+KnownTransformFacts:
+    dimension: n
+    determinant_sign:
+        exact(+1 | -1, provenance) | unknown
+    fixed_space_codimension:
+        exact(value, provenance) | unknown
 ```
 
-That is enough to justify keeping an `even_n / odd_n` discriminator available to an advisory/planning layer whenever a theorem, decomposition, orientation argument, or target specialization actually has different cases.
+The following are **derived**, not independent stored fields:
 
-But **dimension parity alone does not justify a rule such as “odd n => start with a reflection.”** Any such lowering rule needs an additional theorem or measured algorithmic argument.
+```text
+dimension_parity = n mod 2
+orientation = proper iff the known determinant sign is +1
+orientation = improper iff the known determinant sign is -1
+minimal_reflection_count = the known fixed-space codimension
+reflection_count_parity = even iff the known determinant sign is +1
+reflection_count_parity = odd  iff the known determinant sign is -1
+fixed_space_dimension = n - the known fixed-space codimension
+```
 
-## 2. Orientation parity: determinant `+1` versus `-1`
+Storing all of these independently would permit impossible states such as `proper` together with determinant `-1`. A cached derived value may be used for performance, but it must be checked against its canonical source rather than treated as another unconstrained fact.
 
-For an orthogonal transformation `Q`,
+The two canonical observations also overlap and must be reconciled when both are known:
+
+```text
+0 <= fixed_space_codimension <= n
+determinant_sign = (-1)^fixed_space_codimension
+```
+
+Either observation may be available when the other is not, which is why both slots are useful in a partial record. If both are present and violate this relation, their provenance must be investigated rather than selecting whichever value is convenient. A tolerance-dependent numerical rank is an estimate, not an `exact` fixed-space codimension, unless it has been certified under a stated policy.
+
+Provenance belongs on each nontrivial fact. One record-wide provenance field cannot describe a determinant certified from a chosen construction, a fixed space computed symbolically, and a cost learned by measurement.
+
+## 3. Orientation and reflection parity
+
+For an orthogonal transformation,
 
 ```text
 det(Q) in {+1, -1}.
 ```
 
-This is a much stronger immediate algorithm-pruning fact than ambient dimension parity.
-
-```text
-det(Q) = +1  =>  Q in SO(n)   (proper/orientation-preserving)
-det(Q) = -1  =>  Q in O(n) \ SO(n)  (improper/orientation-reversing)
-```
-
-A hyperplane reflection has determinant `-1`. Therefore any reflection factorization
+A hyperplane reflection has determinant `-1`. Therefore every pure-reflection factorization
 
 ```text
 Q = R_k ... R_2 R_1
@@ -55,124 +89,122 @@ satisfies
 det(Q) = (-1)^k.
 ```
 
-So the parity of the number of reflections is fixed immediately by orientation:
+Thus every reflection factorization of a proper transform has even length, and every reflection factorization of an improper transform has odd length. This is an exact pruning rule.
+
+It does **not** say that every proper transform uses exactly two reflections. It says only that its reflection count is even.
+
+## 4. Exact reflection length
+
+For a prescribed orthogonal map on Euclidean `R^n`, the minimal number of hyperplane reflections is
 
 ```text
-Q in SO(n)              => every reflection factorization has even length parity
-Q in O(n) \ SO(n)       => every reflection factorization has odd length parity
+rank(I - Q) = codim Fix(Q).
 ```
 
-This gives a genuine tiny case switch that every planner/micro-optimizer can exploit:
+The equality can be checked directly rather than left as an unsupported strengthening of Cartan-Dieudonne.
+
+### Lower bound
+
+For linear maps `A` and `B`,
 
 ```text
-if proper_rotation_required:
-    reject a single reflection as the final transform
-    retain two-reflection / Givens / direct proper-rotation families
-else if orientation_reversing_required:
-    require odd reflection parity in a pure-reflection factorization
+I - AB = (I - A) + A(I - B),
 ```
 
-For a transformation already known to be a **rotation in `SO(n)`**, the reflection parity is not an extra classifier: it is always even.
-
-## 3. Minimal reflection count can contain more information than parity
-
-Cartan-Dieudonne says that every orthogonal transformation in `n` dimensions is a product of at most `n` hyperplane reflections.
-
-In Euclidean space the sharper reflection-length statement is tied to the fixed subspace. The minimal number of hyperplane reflections required for an orthogonal map `Q` is
+so
 
 ```text
-rank(I - Q)
+rank(I - AB) <= rank(I - A) + rank(I - B).
 ```
 
-which is the codimension of the fixed-point subspace `ker(Q - I)`.
-
-This is potentially useful planning metadata when `Q` is already materialized or its fixed-subspace structure is known symbolically:
+For a hyperplane reflection `R`, `rank(I - R) = 1`. Therefore, if `Q` is a product of `k` reflections,
 
 ```text
-reflection_length_lower_and_exact = rank(I - Q)
-reflection_parity = reflection_length mod 2 = orientation parity
+rank(I - Q) <= k.
 ```
 
-Do not compute a costly matrix rank merely to rediscover a fact that is already known more cheaply. The planner should use the strongest cheap invariant already available from semantics, symbolic structure, or prior computation.
+### Matching upper bound
 
-## 4. The local optimizer should receive facts, not rediscover mathematics
-
-A useful cached planning record could contain:
+Let `F = Fix(Q)`. If `Q` is not the identity, choose `x` outside `F` and set
 
 ```text
-RotationFacts:
-    dimension: n
-    dimension_parity: even | odd
-    orientation: proper | improper | unknown
-    determinant_sign: +1 | -1 | unknown
-    fixed_subspace_dimension: known integer | unknown
-    minimal_reflection_count: known integer | unknown
-    reflection_count_parity: even | odd | unknown
-    global_chart_warning: none | local-only | unknown
-    provenance: theorem / symbolic result / semantic requirement / measurement
+v = Qx - x.
 ```
 
-Then every small optimizer can make immediate local choices without rerunning topology, group theory, or symbolic algebra.
+Because `Q` is orthogonal, reflection in the hyperplane perpendicular to `v` sends `Qx` to `x`. Also `v` is perpendicular to every vector in `F`, so this reflection fixes `F` pointwise. Left-composing by it therefore increases the fixed-space dimension by at least one.
 
-The expensive/nonlocal reasoning belongs upstream. The cheap consequences should be cached and propagated downward.
-
-## 5. What an LLM advisory pass can do with this
-
-The LLM does not need to derive all of topology at instruction-selection time. It can consume a compact fact set such as
+Repeating reaches the identity after at most `codim F` reflections. Combined with the lower bound, the minimum is exactly
 
 ```text
-n is even
-Q is proper
-global one-chart factorization is not assumed
-reflection length <= n
-batch reuses Q
-GPU penalizes divergent per-vector ordering
+codim F = rank(I - Q).
 ```
 
-and propose a shortlist:
+Since `codim F <= n`, the constructive upper bound also recovers the Cartan-Dieudonne statement that at most `n` hyperplane reflections are needed.
+
+Do not compute a costly numerical rank merely to rediscover information already available from symbolic structure. The formula becomes useful metadata only when the fixed-space codimension is known reliably and cheaply enough.
+
+## 5. Dimension parity is derived but not yet a selector
+
+Hatcher's description of integral cohomology **modulo torsion** has different forms for
 
 ```text
-- compare two-reflection/direct-plane plan
-- compare regular Householder-derived proper plan
-- keep Givens as conformance/reference but do not assume a long adaptive chain
-- prefer a reusable factor plan over per-vector rediscovery
+n = 2k + 1
 ```
 
-A deterministic checker can then verify the hard claims and the backend can measure the proposed implementations.
-
-## 6. Cheap case switches are useful even when the final theory is unfinished
-
-This is the main architectural point.
-
-We do **not** need a complete formal theory of every global constraint before using information that is already trivially classifiable.
-
-The planner can begin with a hierarchy:
+and
 
 ```text
-cheap exact facts
-    dimension parity
-    determinant/orientation
-    known shape
-    known fixed directions
-
-symbolic/global facts
-    bundle/trivialization warnings
-    invariant subspaces
-    commuting factors
-    known factorization bounds
-
-heuristic/advisory synthesis
-    LLM proposes candidate plans
-
-checked lowering
-    verify hard constraints
-    benchmark target-specific candidates
+n = 2k + 2.
 ```
 
-That gives the local optimizer immediate usable cases while leaving room for more sophisticated global information to be added later.
+This makes dimension parity relevant to theorem dispatch. It does not supply a lowering rule such as “odd `n`, start with a reflection.”
+
+Likewise, the Euler characteristic distinguishes even- and odd-dimensional spheres, but vanishing Euler characteristic is not sufficient for a full global frame. The actual product exceptions in the bundle `SO(n-1) -> SO(n) -> S^(n-1)` occur at `n = 2, 4, 8`, not at every value of one parity.
+
+Since `n mod 2` is derived trivially from `n`, it need not occupy an independent field unless a concrete consumer benefits from caching it.
+
+## 6. Family constraints belong in a separate record
+
+A warning about global charts is not a property of one matrix `Q`. It needs its own scope:
+
+```text
+FamilyConstraint:
+    parameter_domain
+    candidate_transform_family
+    continuity_requirement
+    statement
+    theorem_scope
+    source
+    verification_status
+```
+
+For example, Hatcher's twisted-product statement is dimension-scoped. It must not be stored as a timeless Boolean `global_chart_warning` detached from `n`, the bundle, and the required kind of section.
+
+## 7. Deterministic pruning before advisory synthesis
+
+From exact request and transform facts, a deterministic pass can make conclusions such as:
+
+```text
+proper alignment requested
+    -> reject a single reflection as the final transform
+
+prescribed Q with fixed_space_codimension = 6
+    -> reject every factorization with fewer than 6 reflections
+    -> require even reflection parity
+
+input_case resolves to zero
+    -> use the identity/no-op convention
+    -> do not normalize
+
+dimension = 1 and input_case resolves to antiparallel and proper requested
+    -> report the request unsatisfiable
+```
+
+An LLM may then propose which surviving representations deserve comparison. It must not turn an unverified topological analogy or heuristic into a hard rejection.
 
 ## References
 
-- Cartan-Dieudonne theorem: every orthogonal transformation in dimension `n` is a product of at most `n` reflections.
-- Hatcher's `SO(n)` cohomology summary distinguishes the `n = 2k+1` and `n = 2k+2` torsion-free cases.
-- The determinant identity `det(R_i) = -1` makes reflection-count parity an exact orientation invariant.
+- Cartan-Dieudonne theorem: every orthogonal transformation in dimension `n` is a product of at most `n` hyperplane reflections.
+- Hatcher's `SO(n)` summary describes `H*(SO(n); Z)` modulo torsion separately for `n = 2k+1` and `n = 2k+2`: https://pi.math.cornell.edu/~hatcher/SO/comments.pdf
+- The determinant identity `det(R_i) = -1` fixes reflection-count parity.
+- The proof above establishes the sharper Euclidean reflection-length formula used by this note.

@@ -1,43 +1,57 @@
 # `SO(n)`: rotations, reflections, and cohomology
 
-This note records the topology connection without pretending that cohomology itself outputs an instruction sequence.
+This is the canonical topology note. Its subject is not how to factor one matrix, but whether a **family** of choices can be made continuously over a domain.
 
 ## Hatcher's reflection construction is directly relevant
 
-In Section 3D of Allen Hatcher's *Algebraic Topology*, for a nonzero vector `v in R^n`, let `r(v)` denote reflection across the hyperplane orthogonal to `v`. Since a reflection has determinant `-1`, Hatcher considers the composition
+In Section 3D of Allen Hatcher's *Algebraic Topology*, for a nonzero vector `v in R^n`, let `r(v)` denote reflection across the hyperplane orthogonal to `v`. Since a reflection has determinant `-1`, Hatcher considers
 
 ```text
-rho(v) = r(v) r(e1)
+rho(v) = r(v) r(e1),
 ```
 
 which lies in `SO(n)`.
 
-Because `v` and `-v` determine the same reflecting hyperplane, `rho(v)` depends only on the line spanned by `v`. This gives a map
+Rescaling `v` by any nonzero scalar leaves its reflecting hyperplane unchanged, so the actual parameter is the unoriented one-dimensional subspace `[v]`. This gives a map
 
 ```text
 RP^(n-1) -> SO(n).
 ```
 
-Hatcher then multiplies these elementary two-reflection rotations to obtain a cellular map
+Hatcher multiplies these elementary two-reflection rotations to obtain a cellular map:
 
 ```text
-RP^(n-1) x RP^(n-2) x ... x RP^1 -> SO(n),
+RP^(n-1) x RP^(n-2) x ... x RP^1 -> SO(n).
 ```
 
-and Proposition 3D.1 uses these products to construct a CW structure on `SO(n)`.
+Proposition 3D.1 identifies the resulting product maps as characteristic maps for the cells of `SO(n)`.
 
-That is a strong reason to keep reflections and products of reflections in the same notebook as numerical rotation factorizations: the topology of `SO(n)` is being built from exactly such elementary pieces.
+This is a concrete reason to keep reflections and products of reflections near numerical rotation factorizations. It does not say that every element of `SO(n)` is a product of only two reflections; the displayed map uses products of many elementary factors.
 
 ## The one-direction-at-a-time recursion
 
-Hatcher also studies evaluation at the last basis vector:
+Hatcher evaluates a rotation at the last basis vector:
 
 ```text
 p : SO(n) -> S^(n-1)
 p(A) = A en.
 ```
 
-Given a rotation `beta` that does not fix `en`, one can choose an elementary `rho(v_beta)` that sends `en` to `beta en`. Then
+The definition of `rho` uses `e1`, while this evaluation uses `en`. These are consistent: `r(e1)` fixes `en`, since `e1` and `en` are orthogonal.
+
+For a rotation `beta` that does not fix `en`, Hatcher chooses the unique
+
+```text
+v_beta in RP^(n-1) \ RP^(n-2)
+```
+
+such that
+
+```text
+rho(v_beta) en = beta en.
+```
+
+Then
 
 ```text
 alpha_beta = rho(v_beta)^(-1) beta
@@ -49,52 +63,95 @@ fixes `en`, so `alpha_beta` lies in `SO(n-1)`, and
 beta = rho(v_beta) alpha_beta.
 ```
 
-This is topologically very close to the numerical idea:
+This resembles one-direction-at-a-time numerical elimination:
 
 ```text
 put one direction in place
 freeze it
-solve the remaining lower-dimensional rotation problem
-repeat
+solve the remaining lower-dimensional problem
 ```
 
-It is therefore reasonable to compare this tower with coordinate-by-coordinate Givens elimination, Householder alignment, and other `x -> ||x|| e1` constructions.
+The resemblance is useful, but Hatcher's construction is a cell decomposition, not a claim that this is the numerically best factorization order.
 
-## `SO(n)` is generally twisted, not one global coordinate chart
+## The bundle and its actual exceptions
 
-The relevant bundle has the familiar form
+Evaluation gives the principal bundle
 
 ```text
 SO(n-1) -> SO(n) -> S^(n-1).
 ```
 
-Hatcher notes that, apart from special cases, `SO(n)` is not simply a direct product `S^(n-1) x SO(n-1)` but a twisted product.
-
-For planning, the useful distinction is:
+For `n >= 3`, Hatcher explicitly records product decompositions in the exceptional cases
 
 ```text
-Can every individual matrix be factored?
+SO(4) homeomorphic to S^3 x SO(3)
+SO(8) homeomorphic to S^7 x SO(7),
 ```
 
-versus
+while in the other cases the space is only a twisted product. The `n = 2` case is the elementary identity `SO(2) homeomorphic to S^1` with trivial fiber.
+
+Consequently, the safe planning statement is not
 
 ```text
-Can one choose those factorizations continuously and coherently as the matrix varies?
+SO(n) is never a global product.
 ```
 
-The first is mainly linear algebra. The second is topology. A numerical routine that needs sign conventions, pivot/order choices, singular cases, or branch cuts may sometimes be exposing a genuine failure of one global continuous choice rather than merely a poor implementation.
+It is:
 
-## Where cohomology enters
+```text
+Do not assume a global product or section.
+Record n and the exact theorem scope;
+the bundle is exceptional at n = 2, 4, and 8.
+```
 
-Cohomology should not be treated as a scheduler that says which Givens rotation to perform next. Its plausible relevance is global:
+## Pointwise existence is different from a continuous family
 
-- distinguish topological structure that cannot be removed by changing coordinates;
-- detect obstructions to globally continuous choices of frames, decompositions, or sections;
-- classify/equate families of choices;
-- tell us when a single global parametrization must develop singularities or identifications;
-- expose `Z/2` phenomena naturally associated with reflections/projective choices.
+For an individual nonzero vector or matrix, a correct alignment/factorization can be chosen. That does not imply that one rule can choose such data continuously over the entire parameter space.
 
-The parity of the spheres in the tower can matter to these global questions. For example, even and odd spheres have different Euler characteristics, and this affects the existence of certain global nonvanishing fields/sections. Do not turn that observation directly into a machine-code heuristic; treat it as a signal to ask which continuous choice the planner is implicitly trying to make.
+A section of
+
+```text
+SO(n) -> S^(n-1)
+```
+
+would choose, continuously for every direction, a full oriented orthonormal frame extending that direction. This is a parallelizability question for the sphere, not merely the question of whether one tangent vector field exists.
+
+Practical symptoms of a missing global choice can include multiple charts, sign conventions, singular cases, redundant parameters, and fallback paths. Before attributing a branch in a numerical routine to topology, however, identify the exact family, domain, and continuity requirement. A pointwise kernel with no continuity requirement does not acquire a topological obstruction merely because its values lie in `SO(n)`.
+
+## Euler characteristic is only a first obstruction
+
+For spheres,
+
+```text
+chi(S^(2k)) = 2
+chi(S^(2k+1)) = 0.
+```
+
+The nonzero Euler characteristic of an even-dimensional sphere rules out a nowhere-zero tangent vector field. Odd-dimensional spheres do admit at least one such field.
+
+But one nonvanishing field is much weaker than a full global frame. Vanishing Euler characteristic therefore does **not** trivialize the `SO(n-1)` bundle. Among positive-dimensional spheres, only `S^1`, `S^3`, and `S^7` are parallelizable, matching the `n = 2, 4, 8` product cases above.
+
+This prevents an invalid compiler rule such as “odd sphere, therefore one global smooth factorization.” Dimension parity can tell the planner which theorem case to inspect; it does not by itself choose an algorithm.
+
+## Where cohomology can enter
+
+Cohomology is not a scheduler that says which Givens rotation to perform next. Its plausible role is to support precisely scoped family-level questions:
+
+- whether a particular bundle admits a section;
+- whether a proposed global parametrization must have singularities or identifications;
+- whether characteristic classes obstruct a stated continuous choice;
+- whether two families lie in distinct topological classes;
+- whether projective reflection parameters introduce genuine mod-2 structure.
+
+No such result should prune an algorithm until the planner records:
+
+```text
+parameter domain
+requested continuity or smoothness
+the exact bundle/map/family
+the theorem and its hypotheses
+the dimension range
+```
 
 ## Hatcher / Agosto / Perez computations
 
@@ -102,21 +159,18 @@ Allen Hatcher maintains a separate page, **The Cohomology of `SO(n)`**, with com
 
 Credits given by the source:
 
-- **M. A. Agosto and J. J. Perez** — computer-generated pictures / Mathematica program;
+- **M. A. Agosto and J. J. Perez** — computer-generated pictures and the Mathematica program;
 - **Allen Hatcher** — commentary.
 
-The note emphasizes that the integral cohomology has `2`-torsion and that the mod-2 cohomology is easier to describe; the diagrams encode the Bockstein information needed to recover the integral picture. The source also remarks that the size of the mod-2 cohomology grows rapidly with `n` even though `dim SO(n) = n(n-1)/2` grows quadratically.
+The source says the integral cohomology has only order-2 torsion and that the Bockstein computation recovers the integral picture from mod-2 information. It also contrasts the rapid growth of the mod-2 cohomology with the quadratic dimension `dim SO(n) = n(n-1)/2`.
 
-For this project, these diagrams are not evidence that cohomology will optimize a rotation kernel. They are evidence that the global space of rotations has substantial computable structure that should be checked before assuming every planning problem is merely a local sequence of plane rotations.
+These diagrams demonstrate computable global structure. They do not establish that cohomology improves a rotation kernel. The next scientific step would be to identify one concrete family-level planning decision that a checked invariant settles.
 
 ## Source pointers
 
 - Allen Hatcher, *Algebraic Topology*, Section 3D, "The Cohomology of `SO(n)`": https://pi.math.cornell.edu/~hatcher/AT/ATch3.4.pdf
 - Hatcher's `SO(n)` picture page: https://pi.math.cornell.edu/~hatcher/SO/SO.html
 - Combined Agosto/Perez diagrams with Hatcher commentary: https://pi.math.cornell.edu/~hatcher/SO/SO%28n%29.pdf
+- Canonical source and redistribution note: [`software-and-sources.md`](software-and-sources.md)
 
-### Figure pointers, not repository copies
-
-The combined `SO(n)` PDF puts the `SO(7)` Bockstein diagram on its first page and the generated `SO(5)` through `SO(12)` diagrams on the following pages. Section 3D of the book contains the reflection construction and the small geometric picture used in the proof of the cell decomposition around book pages 294-296.
-
-These figures are linked rather than copied here because the book's reuse notice does not authorize public redistribution of its pages/figures, and no separate redistribution license was found for the `SO(n)` diagram PDF.
+The external figures are linked, not copied into this repository.
