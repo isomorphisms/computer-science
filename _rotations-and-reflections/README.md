@@ -24,6 +24,7 @@ Do not assume in advance that Givens, Householder, two reflections, or another c
 - [`topology-and-cohomology.md`](topology-and-cohomology.md) — Allen Hatcher's reflection-built cell structure on `SO(n)`, the `SO(n-1) -> SO(n) -> S^(n-1)` viewpoint, and why cohomology may constrain coherent families of rotation/reflection plans without prescribing a finite sequence.
 - [`llm-mathematical-advisor.md`](llm-mathematical-advisor.md) — use an LLM as an advisory/orchestration layer over heterogeneous mathematical, symbolic, numerical, hardware, and empirical evidence without pretending every fact already has a compiler opcode.
 - [`parallelism-from-factorizations.md`](parallelism-from-factorizations.md) — use Cartan-Dieudonne/reflection factorizations as dependency structure: internal reflector parallelism, batches, commuting/disjoint factors, block structure, and tree composition where appropriate.
+- [`existing-project-connections.md`](existing-project-connections.md) — connects the semidirect-product keyboard control and the existing `isomorphismes/Cayley` mathematical toy-box project to this planning architecture.
 - [`software-and-sources.md`](software-and-sources.md) — Hatcher/Agosto/Perez sources, Trefethen & Bau, Macaulay2, Debian `cohomcalg`, and reuse/licensing notes.
 
 ## Existing Computer Science threads
