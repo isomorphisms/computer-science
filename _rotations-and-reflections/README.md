@@ -22,10 +22,11 @@ Do not assume in advance that Givens, Householder, two reflections, or another c
 
 - [`numerical-linear-algebra.md`](numerical-linear-algebra.md) — compact Givens / Householder / two-reflection / direct-plane summary and the existing compiler-planning questions.
 - [`topology-and-cohomology.md`](topology-and-cohomology.md) — Allen Hatcher's reflection-built cell structure on `SO(n)`, the `SO(n-1) -> SO(n) -> S^(n-1)` viewpoint, and why cohomology may constrain coherent families of rotation/reflection plans without prescribing a finite sequence.
+- [`cheap-invariants-and-parity.md`](cheap-invariants-and-parity.md) — make `n mod 2`, determinant/orientation, reflection-count parity, and known fixed-subspace/reflection-length facts cheap cached planner metadata; distinguishes even/odd dimension from even/odd reflection parity.
 - [`llm-mathematical-advisor.md`](llm-mathematical-advisor.md) — use an LLM as an advisory/orchestration layer over heterogeneous mathematical, symbolic, numerical, hardware, and empirical evidence without pretending every fact already has a compiler opcode.
 - [`parallelism-from-factorizations.md`](parallelism-from-factorizations.md) — use Cartan-Dieudonne/reflection factorizations as dependency structure: internal reflector parallelism, batches, commuting/disjoint factors, block structure, and tree composition where appropriate.
 - [`existing-project-connections.md`](existing-project-connections.md) — connects the semidirect-product keyboard control and the existing `isomorphismes/Cayley` mathematical toy-box project to this planning architecture.
-- [`software-and-sources.md`](software-and-sources.md) — Hatcher/Agosto/Perez sources, Trefethen & Bau, Macaulay2, Debian `cohomcalg`, and reuse/licensing notes.
+- [`software-and-sources.md`](software-and-sources.md) — distinguishes Hatcher's textbook from the separate two-page `SO(n)` handout and ten-page Agosto/Perez/Hatcher diagram collection; also records Trefethen & Bau, Macaulay2, Debian `cohomcalg`, direct source links, and reuse/licensing notes.
 
 ## Existing Computer Science threads
 
@@ -38,6 +39,6 @@ Do not assume in advance that Givens, Householder, two reflections, or another c
 
 The public electronic edition of Allen Hatcher's *Algebraic Topology* is free to download, but its copyright notice says that single paper/electronic copies may be made for noncommercial personal use and that all other rights are reserved. That is not a license to vendor the book, its pages, or its figures into this public repository.
 
-The separate Hatcher `SO(n)` picture/commentary PDF credits the computer-generated pictures to **M. A. Agosto and J. J. Perez** and the commentary to **Allen Hatcher**. I found no separate redistribution license on that page or PDF. Therefore this branch links to and summarizes the material rather than copying the PDF or its figures.
+The **separate** Hatcher `SO(n)` material is not just a book excerpt: Hatcher hosts a short explanatory handout plus a collection of computer-generated diagrams. The combined PDF credits the pictures to **M. A. Agosto and J. J. Perez** and the commentary to **Allen Hatcher**. I found no separate redistribution license on that page or those PDFs, so this branch links directly to the originals rather than copying/rehosting them.
 
-If explicit redistribution permission is obtained later, direct figures can be added with their original credits and source metadata. Until then, keep figure pointers as links rather than repository copies.
+If explicit redistribution permission is obtained later, direct figures can be added with their original credits and source metadata. Until then, the source note links straight to the one-page and ten-page diagram PDFs so the pictures remain immediately accessible.
